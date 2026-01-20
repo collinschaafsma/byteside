@@ -1,0 +1,25 @@
+{
+	"name": "default",
+	"author": "byteside",
+	"version": "1.0.0",
+	"format": "webm",
+	"resolution": "512x512",
+	"framerate": 24,
+	"loop": true,
+	"states": {
+		"idle": { "file": "idle.webm" },
+		"thinking": { "file": "thinking.webm" },
+		"writing": { "file": "writing.webm" },
+		"bash": { "file": "bash.webm" },
+		"error": { "file": "error.webm", "duration": 2000, "transition_to": "idle" },
+		"success": { "file": "success.webm", "duration": 2000, "transition_to": "idle" },
+		"waiting": { "file": "waiting.webm" }
+	},
+	"palette": {
+		"primary": "#6366f1",
+		"secondary": "#8b5cf6",
+		"success": "#22c55e",
+		"error": "#ef4444",
+		"background": "#0a0a0a"
+	}
+}

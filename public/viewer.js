@@ -3,8 +3,10 @@
  */
 (() => {
 	// DOM elements
-	const stateDisplay = document.getElementById("state-display");
-	const stateText = stateDisplay.querySelector(".state-text");
+	const avatarContainer = document.getElementById("avatar-container");
+	const videoA = document.getElementById("avatar-video-a");
+	const videoB = document.getElementById("avatar-video-b");
+	const stateLabel = document.getElementById("state-label");
 	const debugPanel = document.getElementById("debug-panel");
 	const connectionIndicator = document.getElementById("connection-indicator");
 
@@ -21,11 +23,18 @@
 	let reconnectAttempts = 0;
 	let reconnectTimeout = null;
 	let pingInterval = null;
+	let manifest = null;
+	let transitionTimeout = null;
+	let activeVideo = videoA;
+	let inactiveVideo = videoB;
+	const preloadedVideos = {};
 
 	// Constants
 	const INITIAL_RECONNECT_DELAY = 2000;
 	const MAX_RECONNECT_DELAY = 30000;
 	const PING_INTERVAL = 30000;
+	const AVATAR_NAME = "default";
+	const CROSSFADE_DURATION = 300; // ms, should match CSS transition
 
 	/**
 	 * Build WebSocket URL based on current location
@@ -36,14 +45,182 @@
 	}
 
 	/**
+	 * Load avatar manifest
+	 */
+	async function loadManifest() {
+		try {
+			const response = await fetch(`/avatars/${AVATAR_NAME}/manifest.json`);
+			if (!response.ok) {
+				throw new Error(`Failed to load manifest: ${response.status}`);
+			}
+			manifest = await response.json();
+			console.log("[byteside] Loaded manifest:", manifest.name);
+			return true;
+		} catch (err) {
+			console.error("[byteside] Failed to load manifest:", err);
+			return false;
+		}
+	}
+
+	/**
+	 * Preload all avatar videos
+	 */
+	async function preloadVideos() {
+		if (!manifest || !manifest.states) return;
+
+		const states = Object.keys(manifest.states);
+		console.log(`[byteside] Preloading ${states.length} videos...`);
+
+		const promises = states.map((state) => {
+			return new Promise((resolve) => {
+				const stateConfig = manifest.states[state];
+				const url = `/avatars/${AVATAR_NAME}/${stateConfig.file}`;
+
+				// Create a video element for preloading
+				const video = document.createElement("video");
+				video.muted = true;
+				video.playsInline = true;
+				video.preload = "auto";
+
+				video.oncanplaythrough = () => {
+					preloadedVideos[state] = url;
+					console.log(`[byteside] Preloaded: ${state}`);
+					resolve();
+				};
+
+				video.onerror = () => {
+					console.warn(`[byteside] Failed to preload: ${state}`);
+					preloadedVideos[state] = url; // Still store URL for fallback
+					resolve();
+				};
+
+				video.src = url;
+				video.load();
+			});
+		});
+
+		await Promise.all(promises);
+		console.log("[byteside] All videos preloaded");
+	}
+
+	/**
+	 * Get video URL for a state
+	 */
+	function getVideoUrl(state) {
+		// Use preloaded URL if available
+		if (preloadedVideos[state]) {
+			return preloadedVideos[state];
+		}
+
+		// Fallback to constructing URL
+		if (!manifest || !manifest.states[state]) {
+			state = "idle";
+		}
+		const stateConfig = manifest.states[state];
+		if (!stateConfig) return null;
+		return `/avatars/${AVATAR_NAME}/${stateConfig.file}`;
+	}
+
+	/**
+	 * Get state configuration
+	 */
+	function getStateConfig(state) {
+		if (!manifest || !manifest.states[state]) {
+			return manifest?.states?.idle || null;
+		}
+		return manifest.states[state];
+	}
+
+	/**
+	 * Crossfade to a new video
+	 */
+	function crossfadeTo(state) {
+		const videoUrl = getVideoUrl(state);
+		if (!videoUrl) return;
+
+		const stateConfig = getStateConfig(state);
+
+		// Clear any pending transition
+		if (transitionTimeout) {
+			clearTimeout(transitionTimeout);
+			transitionTimeout = null;
+		}
+
+		// Set up the inactive video with the new source
+		inactiveVideo.src = videoUrl;
+
+		// Handle looping based on manifest settings and state config
+		const isOneShot = stateConfig?.duration !== undefined;
+		inactiveVideo.loop = !isOneShot && (manifest?.loop ?? true);
+
+		// Wait for video to be ready, then crossfade
+		const onCanPlay = () => {
+			inactiveVideo.removeEventListener("canplay", onCanPlay);
+
+			// Start playing the new video
+			inactiveVideo.play().catch((err) => {
+				console.error("[byteside] Failed to play video:", err);
+			});
+
+			// Crossfade: activate new, deactivate old
+			inactiveVideo.classList.add("active");
+			activeVideo.classList.remove("active");
+
+			// Swap references
+			const temp = activeVideo;
+			activeVideo = inactiveVideo;
+			inactiveVideo = temp;
+
+			// Pause the old video after crossfade completes
+			setTimeout(() => {
+				inactiveVideo.pause();
+			}, CROSSFADE_DURATION);
+		};
+
+		inactiveVideo.addEventListener("canplay", onCanPlay);
+		inactiveVideo.load();
+
+		// Handle one-shot states with transitions
+		if (isOneShot && stateConfig.transition_to) {
+			transitionTimeout = setTimeout(() => {
+				updateStateDisplay(stateConfig.transition_to);
+			}, stateConfig.duration);
+		}
+	}
+
+	/**
+	 * Play initial video (no crossfade)
+	 */
+	function playInitialVideo(state) {
+		const videoUrl = getVideoUrl(state);
+		if (!videoUrl) return;
+
+		const stateConfig = getStateConfig(state);
+		const isOneShot = stateConfig?.duration !== undefined;
+
+		activeVideo.src = videoUrl;
+		activeVideo.loop = !isOneShot && (manifest?.loop ?? true);
+		activeVideo.classList.add("active");
+
+		activeVideo.play().catch((err) => {
+			console.error("[byteside] Failed to play initial video:", err);
+		});
+	}
+
+	/**
 	 * Update the main state display
 	 */
 	function updateStateDisplay(state) {
+		if (state === currentState) return;
+
 		previousState = currentState;
 		currentState = state;
 
-		stateDisplay.dataset.state = state;
-		stateText.textContent = state.toUpperCase();
+		avatarContainer.dataset.state = state;
+		stateLabel.textContent = state.toUpperCase();
+
+		// Crossfade to the new state video
+		crossfadeTo(state);
 
 		// Update debug info
 		debugState.textContent = state;
@@ -58,9 +235,9 @@
 		debugConnection.textContent = status;
 
 		if (status === "disconnected") {
-			stateDisplay.classList.add("disconnected");
+			avatarContainer.classList.add("disconnected");
 		} else {
-			stateDisplay.classList.remove("disconnected");
+			avatarContainer.classList.remove("disconnected");
 		}
 	}
 
@@ -195,7 +372,20 @@
 	/**
 	 * Initialize the viewer
 	 */
-	function init() {
+	async function init() {
+		// Load manifest first
+		const loaded = await loadManifest();
+		if (!loaded) {
+			console.error("[byteside] Cannot start without manifest");
+			return;
+		}
+
+		// Preload all videos for smooth transitions
+		await preloadVideos();
+
+		// Play initial idle state (no crossfade)
+		playInitialVideo("idle");
+
 		// Toggle debug panel with 'D' key
 		document.addEventListener("keydown", (e) => {
 			if (e.key === "d" || e.key === "D") {

@@ -8,8 +8,12 @@
 </head>
 <body>
 	<main class="viewer">
-		<div id="state-display" class="state-display" data-state="idle">
-			<span class="state-text">IDLE</span>
+		<div id="avatar-container" class="avatar-container" data-state="idle">
+			<div class="video-wrapper">
+				<video id="avatar-video-a" class="avatar-video active" muted playsinline></video>
+				<video id="avatar-video-b" class="avatar-video" muted playsinline></video>
+			</div>
+			<div id="state-label" class="state-label">IDLE</div>
 		</div>
 	</main>
 

@@ -48,19 +48,21 @@ body {
 	width: 100%;
 }
 
-/* State display */
-.state-display {
+/* Avatar container */
+.avatar-container {
 	display: flex;
+	flex-direction: column;
 	align-items: center;
 	justify-content: center;
-	padding: 3rem 5rem;
+	gap: 1.5rem;
+	padding: 2rem;
 	border-radius: 1rem;
 	background: var(--bg-secondary);
 	box-shadow: 0 0 60px rgba(107, 114, 128, 0.15);
-	transition: all 0.3s ease;
+	transition: box-shadow 0.3s ease;
 }
 
-.state-display.disconnected {
+.avatar-container.disconnected {
 	opacity: 0.5;
 	animation: pulse 2s ease-in-out infinite;
 }
@@ -74,61 +76,89 @@ body {
 	}
 }
 
-.state-text {
-	font-size: 4rem;
-	font-weight: 700;
-	letter-spacing: 0.1em;
+/* Video wrapper for crossfade */
+.video-wrapper {
+	position: relative;
+	width: 256px;
+	height: 256px;
+	border-radius: 0.5rem;
+	overflow: hidden;
+	background: var(--bg-primary);
+}
+
+/* Avatar video */
+.avatar-video {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	object-fit: contain;
+	opacity: 0;
+	transition: opacity 0.3s ease;
+}
+
+.avatar-video.active {
+	opacity: 1;
+}
+
+/* State label */
+.state-label {
+	font-size: 1rem;
+	font-weight: 600;
+	letter-spacing: 0.15em;
 	text-transform: uppercase;
 	transition: color 0.3s ease;
+	color: var(--text-secondary);
 }
 
 /* State-specific colors */
-.state-display[data-state="idle"] {
+.avatar-container[data-state="idle"] {
 	box-shadow: 0 0 60px rgba(107, 114, 128, 0.15);
 }
-.state-display[data-state="idle"] .state-text {
+.avatar-container[data-state="idle"] .state-label {
 	color: var(--color-idle);
 }
 
-.state-display[data-state="thinking"] {
+.avatar-container[data-state="thinking"] {
 	box-shadow: 0 0 60px rgba(59, 130, 246, 0.25);
 }
-.state-display[data-state="thinking"] .state-text {
+.avatar-container[data-state="thinking"] .state-label {
 	color: var(--color-thinking);
 }
 
-.state-display[data-state="writing"] {
+.avatar-container[data-state="writing"] {
 	box-shadow: 0 0 60px rgba(16, 185, 129, 0.25);
 }
-.state-display[data-state="writing"] .state-text {
+.avatar-container[data-state="writing"] .state-label {
 	color: var(--color-writing);
 }
 
-.state-display[data-state="bash"] {
+.avatar-container[data-state="bash"] {
 	box-shadow: 0 0 60px rgba(245, 158, 11, 0.25);
 }
-.state-display[data-state="bash"] .state-text {
+.avatar-container[data-state="bash"] .state-label {
 	color: var(--color-bash);
 }
 
-.state-display[data-state="error"] {
+.avatar-container[data-state="error"] {
 	box-shadow: 0 0 60px rgba(239, 68, 68, 0.25);
 }
-.state-display[data-state="error"] .state-text {
+.avatar-container[data-state="error"] .state-label {
 	color: var(--color-error);
 }
 
-.state-display[data-state="success"] {
+.avatar-container[data-state="success"] {
 	box-shadow: 0 0 60px rgba(34, 197, 94, 0.25);
 }
-.state-display[data-state="success"] .state-text {
+.avatar-container[data-state="success"] .state-label {
 	color: var(--color-success);
 }
 
-.state-display[data-state="waiting"] {
+.avatar-container[data-state="waiting"] {
 	box-shadow: 0 0 60px rgba(168, 85, 247, 0.25);
 }
-.state-display[data-state="waiting"] .state-text {
+.avatar-container[data-state="waiting"] .state-label {
 	color: var(--color-waiting);
 }
 

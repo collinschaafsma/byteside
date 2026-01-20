@@ -13,7 +13,7 @@ byteside is an animated avatar companion for AI coding agents. It provides a vis
 ```
 
 - **Nitro Server**: HTTP/WebSocket server managing avatar state
-- **Browser Viewer**: Displays animated avatar (CSS/Lottie)
+- **Browser Viewer**: Displays animated avatar (WebM videos)
 - **Hooks Integration**: Claude Code hooks trigger state changes
 
 ## Directory Structure
@@ -31,7 +31,11 @@ byteside/
 │   └── cors.ts       # CORS configuration
 ├── tests/            # Vitest tests
 ├── public/           # Static files served by Nitro
-├── avatars/          # Avatar assets and animations
+│   ├── avatars/      # Avatar assets and animations
+│   │   └── default/  # Default avatar (WebM videos + manifest.json)
+│   ├── index.html    # Browser viewer HTML
+│   ├── viewer.js     # Viewer JavaScript
+│   └── styles.css    # Viewer styles
 ├── nitro.config.ts   # Nitro configuration
 ├── tsconfig.json     # TypeScript config (strict mode)
 └── biome.json        # Linter/formatter config

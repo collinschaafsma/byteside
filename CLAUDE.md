@@ -21,10 +21,15 @@ byteside is an animated avatar companion for AI coding agents. It provides a vis
 ```
 byteside/
 ├── src/              # Shared source code
-│   └── types.ts      # Type definitions (AvatarState, etc.)
-├── server/           # Nitro server code
-│   ├── routes/       # API endpoints (GET/POST /state)
-│   └── plugins/      # Server plugins (WebSocket, state)
+│   └── types.ts      # Type definitions (AvatarState, WsMessage, etc.)
+├── routes/           # API endpoints
+│   ├── state.get.ts  # GET /state
+│   ├── state.post.ts # POST /state
+│   └── _ws.ts        # WebSocket handler
+├── plugins/          # Nitro plugins
+│   ├── state.ts      # State management with pub/sub
+│   └── cors.ts       # CORS configuration
+├── tests/            # Vitest tests
 ├── public/           # Static files served by Nitro
 ├── avatars/          # Avatar assets and animations
 ├── nitro.config.ts   # Nitro configuration
@@ -38,6 +43,7 @@ byteside/
 bun run dev      # Start development server
 bun run build    # Build for production
 bun run preview  # Preview production build
+bun run test     # Run Vitest tests
 bun run lint     # Run Biome linter
 bun run lint:fix # Auto-fix lint issues
 ```
@@ -62,12 +68,11 @@ The avatar has 7 possible states:
 | `success`  | Task completion                | Celebratory               |
 | `waiting`  | Waiting for user input         | Attentive                 |
 
-## API Endpoints (planned)
+## API Endpoints
 
 - `GET /state` - Get current avatar state
 - `POST /state` - Update avatar state
-- `GET /viewer` - Serve avatar viewer HTML
-- `WS /ws` - WebSocket for real-time updates
+- `WS /_ws` - WebSocket for real-time updates (sends welcome message on connect, broadcasts state changes)
 
 ## Documentation
 

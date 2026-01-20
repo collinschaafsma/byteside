@@ -1,0 +1,218 @@
+/**
+ * byteside viewer styles
+ */
+
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
+
+:root {
+	/* State colors */
+	--color-idle: #6b7280;
+	--color-thinking: #3b82f6;
+	--color-writing: #10b981;
+	--color-bash: #f59e0b;
+	--color-error: #ef4444;
+	--color-success: #22c55e;
+	--color-waiting: #a855f7;
+
+	/* UI colors */
+	--bg-primary: #0a0a0f;
+	--bg-secondary: #1a1a2e;
+	--text-primary: #f0f0f0;
+	--text-secondary: #888;
+	--text-muted: #555;
+}
+
+html,
+body {
+	height: 100%;
+	width: 100%;
+}
+
+body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+	background: var(--bg-primary);
+	color: var(--text-primary);
+	overflow: hidden;
+}
+
+/* Main viewer layout */
+.viewer {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 100%;
+	width: 100%;
+}
+
+/* State display */
+.state-display {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 3rem 5rem;
+	border-radius: 1rem;
+	background: var(--bg-secondary);
+	box-shadow: 0 0 60px rgba(107, 114, 128, 0.15);
+	transition: all 0.3s ease;
+}
+
+.state-display.disconnected {
+	opacity: 0.5;
+	animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+	0%, 100% {
+		opacity: 0.5;
+	}
+	50% {
+		opacity: 0.3;
+	}
+}
+
+.state-text {
+	font-size: 4rem;
+	font-weight: 700;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	transition: color 0.3s ease;
+}
+
+/* State-specific colors */
+.state-display[data-state="idle"] {
+	box-shadow: 0 0 60px rgba(107, 114, 128, 0.15);
+}
+.state-display[data-state="idle"] .state-text {
+	color: var(--color-idle);
+}
+
+.state-display[data-state="thinking"] {
+	box-shadow: 0 0 60px rgba(59, 130, 246, 0.25);
+}
+.state-display[data-state="thinking"] .state-text {
+	color: var(--color-thinking);
+}
+
+.state-display[data-state="writing"] {
+	box-shadow: 0 0 60px rgba(16, 185, 129, 0.25);
+}
+.state-display[data-state="writing"] .state-text {
+	color: var(--color-writing);
+}
+
+.state-display[data-state="bash"] {
+	box-shadow: 0 0 60px rgba(245, 158, 11, 0.25);
+}
+.state-display[data-state="bash"] .state-text {
+	color: var(--color-bash);
+}
+
+.state-display[data-state="error"] {
+	box-shadow: 0 0 60px rgba(239, 68, 68, 0.25);
+}
+.state-display[data-state="error"] .state-text {
+	color: var(--color-error);
+}
+
+.state-display[data-state="success"] {
+	box-shadow: 0 0 60px rgba(34, 197, 94, 0.25);
+}
+.state-display[data-state="success"] .state-text {
+	color: var(--color-success);
+}
+
+.state-display[data-state="waiting"] {
+	box-shadow: 0 0 60px rgba(168, 85, 247, 0.25);
+}
+.state-display[data-state="waiting"] .state-text {
+	color: var(--color-waiting);
+}
+
+/* Connection indicator */
+.connection-indicator {
+	position: fixed;
+	bottom: 1rem;
+	right: 1rem;
+	padding: 0.5rem;
+	cursor: pointer;
+	z-index: 100;
+}
+
+.indicator-dot {
+	display: block;
+	width: 10px;
+	height: 10px;
+	border-radius: 50%;
+	transition: background-color 0.3s ease;
+}
+
+.connection-indicator[data-status="connected"] .indicator-dot {
+	background-color: var(--color-success);
+}
+
+.connection-indicator[data-status="connecting"] .indicator-dot,
+.connection-indicator[data-status="reconnecting"] .indicator-dot {
+	background-color: var(--color-bash);
+	animation: blink 1s ease-in-out infinite;
+}
+
+.connection-indicator[data-status="disconnected"] .indicator-dot {
+	background-color: var(--color-error);
+}
+
+@keyframes blink {
+	0%, 100% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0.3;
+	}
+}
+
+/* Debug panel */
+.debug-panel {
+	position: fixed;
+	bottom: 1rem;
+	right: 3rem;
+	background: var(--bg-secondary);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: 0.5rem;
+	padding: 1rem;
+	font-size: 0.75rem;
+	min-width: 180px;
+	z-index: 99;
+	transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.debug-panel.hidden {
+	opacity: 0;
+	pointer-events: none;
+	transform: translateY(10px);
+}
+
+.debug-panel h3 {
+	font-size: 0.625rem;
+	text-transform: uppercase;
+	letter-spacing: 0.1em;
+	color: var(--text-muted);
+	margin-bottom: 0.75rem;
+}
+
+.debug-panel dl {
+	display: grid;
+	grid-template-columns: auto 1fr;
+	gap: 0.25rem 1rem;
+}
+
+.debug-panel dt {
+	color: var(--text-secondary);
+}
+
+.debug-panel dd {
+	color: var(--text-primary);
+	font-family: "SF Mono", Monaco, "Cascadia Code", monospace;
+}

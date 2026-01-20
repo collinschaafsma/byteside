@@ -26,7 +26,6 @@ vi.mock("nitro/h3", () => ({
 }));
 
 import { readBody, setResponseStatus } from "nitro/h3";
-import indexHandler from "../routes/index.get";
 // Import handlers after mocking
 import getStateHandler from "../routes/state.get";
 import postStateHandler from "../routes/state.post";
@@ -124,34 +123,6 @@ describe("API routes", () => {
 				state: "success",
 				previous: "writing",
 			});
-		});
-	});
-
-	describe("GET /", () => {
-		it("returns HTML content", () => {
-			const event = mockEvent();
-			const result = indexHandler(event);
-
-			expect(typeof result).toBe("string");
-			expect(result).toContain("<!DOCTYPE html>");
-			expect(result).toContain("byteside viewer");
-		});
-
-		it("contains state container element", () => {
-			const event = mockEvent();
-			const result = indexHandler(event);
-
-			expect(result).toContain('id="state"');
-			expect(result).toContain('class="state-value"');
-		});
-
-		it("includes JavaScript for state polling", () => {
-			const event = mockEvent();
-			const result = indexHandler(event);
-
-			expect(result).toContain("<script>");
-			expect(result).toContain("fetchState");
-			expect(result).toContain('fetch("/state")');
 		});
 	});
 });

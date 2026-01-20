@@ -1,14 +1,20 @@
 /**
+ * Array of all required avatar states.
+ */
+export const REQUIRED_STATES = [
+	"idle",
+	"thinking",
+	"writing",
+	"bash",
+	"error",
+	"success",
+	"waiting",
+] as const;
+
+/**
  * Valid avatar states representing the AI agent's current activity.
  */
-export type AvatarState =
-	| "idle"
-	| "thinking"
-	| "writing"
-	| "bash"
-	| "error"
-	| "success"
-	| "waiting";
+export type AvatarState = (typeof REQUIRED_STATES)[number];
 
 /**
  * Request body for POST /state endpoint.

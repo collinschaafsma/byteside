@@ -26,6 +26,71 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const rootDir = resolve(__dirname, "..");
 
+// Viewer window dimensions (256px video + 64px padding + 24px gap + 20px label + margin)
+const VIEWER_WIDTH = 340;
+const VIEWER_HEIGHT = 390;
+
+// Chrome paths by platform
+const CHROME_PATHS: Record<string, string[]> = {
+	darwin: ["/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"],
+	win32: [
+		"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+		"C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+	],
+	linux: [
+		"/usr/bin/google-chrome",
+		"/usr/bin/google-chrome-stable",
+		"/usr/bin/chromium",
+		"/usr/bin/chromium-browser",
+	],
+};
+
+/**
+ * Find Chrome executable path for the current platform.
+ */
+async function findChrome(): Promise<string | null> {
+	const paths = CHROME_PATHS[process.platform] ?? [];
+	const { existsSync } = await import("node:fs");
+	for (const p of paths) {
+		if (existsSync(p)) {
+			return p;
+		}
+	}
+	return null;
+}
+
+/**
+ * Open the viewer in a browser window.
+ * Tries Chrome app mode first for a minimal popup window, falls back to default browser.
+ * @returns "app" if opened in app mode, "browser" if opened in regular browser
+ */
+async function openViewer(url: string): Promise<"app" | "browser"> {
+	// Try Chrome app mode for a clean, chromeless window
+	const chromePath = await findChrome();
+	if (chromePath) {
+		try {
+			const { homedir } = await import("node:os");
+			const { join } = await import("node:path");
+			// Use a separate user data dir so Chrome respects our window size
+			const userDataDir = join(homedir(), ".byteside", "chrome-profile");
+			const args = [
+				`--app=${url}`,
+				`--window-size=${VIEWER_WIDTH},${VIEWER_HEIGHT}`,
+				`--user-data-dir=${userDataDir}`,
+			];
+			const proc = spawn(chromePath, args, { detached: true, stdio: "ignore" });
+			proc.unref();
+			return "app";
+		} catch {
+			// Fall through to default browser
+		}
+	}
+
+	// Fall back to default browser
+	await open(url);
+	return "browser";
+}
+
 // ANSI attribute bits (match @opentui/core internal encoding)
 const ATTR_BOLD = 1 << 0;
 const ATTR_ITALIC = 1 << 1;
@@ -164,10 +229,14 @@ function startServer(port: number, avatar: string, shouldOpen: boolean): void {
 
 			// Auto-open browser
 			if (shouldOpen) {
-				printStatus("Opening browser...");
-				open(url).then(() => {
-					printStatus("Browser opened", "success");
-				});
+				printStatus("Opening viewer...");
+				openViewer(url)
+					.then((mode) => {
+						printStatus(`Viewer opened${mode === "app" ? " (app mode)" : ""}`, "success");
+					})
+					.catch((err) => {
+						printStatus(`Failed to open viewer: ${err.message}`, "error");
+					});
 			}
 
 			log(t``);

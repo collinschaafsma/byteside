@@ -33,8 +33,10 @@
 	const INITIAL_RECONNECT_DELAY = 2000;
 	const MAX_RECONNECT_DELAY = 30000;
 	const PING_INTERVAL = 30000;
-	const AVATAR_NAME = "default";
 	const CROSSFADE_DURATION = 300; // ms, should match CSS transition
+
+	// Config (loaded from server)
+	let avatarName = "default";
 
 	/**
 	 * Build WebSocket URL based on current location
@@ -45,11 +47,31 @@
 	}
 
 	/**
+	 * Load config from server
+	 */
+	async function loadConfig() {
+		try {
+			const response = await fetch("/config");
+			if (!response.ok) {
+				console.warn("[byteside] Failed to load config, using default avatar");
+				return;
+			}
+			const config = await response.json();
+			if (config.avatar) {
+				avatarName = config.avatar;
+				console.log("[byteside] Loaded config, avatar:", avatarName);
+			}
+		} catch (err) {
+			console.warn("[byteside] Failed to load config:", err);
+		}
+	}
+
+	/**
 	 * Load avatar manifest
 	 */
 	async function loadManifest() {
 		try {
-			const response = await fetch(`/avatars/${AVATAR_NAME}/manifest.json`);
+			const response = await fetch(`/avatars/${avatarName}/manifest.json`);
 			if (!response.ok) {
 				throw new Error(`Failed to load manifest: ${response.status}`);
 			}
@@ -74,7 +96,7 @@
 		const promises = states.map((state) => {
 			return new Promise((resolve) => {
 				const stateConfig = manifest.states[state];
-				const url = `/avatars/${AVATAR_NAME}/${stateConfig.file}`;
+				const url = `/avatars/${avatarName}/${stateConfig.file}`;
 
 				// Create a video element for preloading
 				const video = document.createElement("video");
@@ -118,7 +140,7 @@
 		}
 		const stateConfig = manifest.states[state];
 		if (!stateConfig) return null;
-		return `/avatars/${AVATAR_NAME}/${stateConfig.file}`;
+		return `/avatars/${avatarName}/${stateConfig.file}`;
 	}
 
 	/**
@@ -373,7 +395,10 @@
 	 * Initialize the viewer
 	 */
 	async function init() {
-		// Load manifest first
+		// Load config first to get avatar name
+		await loadConfig();
+
+		// Load manifest
 		const loaded = await loadManifest();
 		if (!loaded) {
 			console.error("[byteside] Cannot start without manifest");

@@ -6,7 +6,7 @@
 	"scripts": {
 		"dev": "nitro dev --port 3333",
 		"dev:cli": "bun run src/cli.ts",
-		"build": "nitro build && bun build src/cli.ts --outfile dist/cli.mjs --target node",
+		"build": "nitro build && bun build src/cli.ts --outfile dist/cli.mjs --target node --packages=external",
 		"preview": "nitro preview",
 		"lint": "biome check .",
 		"lint:fix": "biome check --write .",

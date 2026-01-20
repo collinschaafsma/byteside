@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 import { spawn } from "node:child_process";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -10,7 +10,16 @@ import { program } from "commander";
 import open from "open";
 import { discoverAvatars, ensureUserAvatars } from "./avatar.js";
 import { ensureGlobalConfig, loadBytesideConfig } from "./config.js";
+import {
+	generateHookConfig,
+	getGlobalClaudeSettingsPath,
+	getHookStatus,
+	getProjectClaudeSettingsPath,
+	installHooks,
+	uninstallHooks,
+} from "./hooks.js";
 import { validateAvatar } from "./manifest.js";
+import { type AvatarState, REQUIRED_STATES } from "./types.js";
 
 // Get the root directory (where nitro.config.ts is)
 const __filename = fileURLToPath(import.meta.url);
@@ -304,6 +313,133 @@ async function main(): Promise<void> {
 		.command("validate <path>")
 		.description("Validate an avatar package")
 		.action(validateAvatarCommand);
+
+	// Init command - install hooks
+	program
+		.command("init")
+		.description("Install Claude Code hooks for avatar state changes")
+		.option("-g, --global", "Install to global settings (~/.claude/settings.json)")
+		.option("-p, --project", "Install to project settings (.claude/settings.json)", true)
+		.option("-f, --force", "Overwrite existing hooks")
+		.option("--no-backup", "Skip backup creation")
+		.action(async (options) => {
+			const path = options.global ? getGlobalClaudeSettingsPath() : getProjectClaudeSettingsPath();
+
+			const result = await installHooks(path, {
+				force: options.force,
+				noBackup: !options.backup,
+			});
+
+			if (result.success) {
+				printStatus(result.message, "success");
+				if (result.backupPath) {
+					printStatus(`Backup created: ${result.backupPath}`, "info");
+				}
+			} else {
+				printStatus(result.message, "error");
+				process.exit(1);
+			}
+		});
+
+	// Trigger command - set avatar state
+	program
+		.command("trigger <state>")
+		.description("Set avatar state (used by Claude Code hooks)")
+		.action(async (state: string) => {
+			// Validate state
+			if (!REQUIRED_STATES.includes(state as AvatarState)) {
+				// Silent failure for hooks
+				process.exit(1);
+			}
+
+			// Load config to get port
+			const port = config.server?.port ?? 3333;
+
+			// POST to server (silent, fail gracefully)
+			try {
+				await fetch(`http://localhost:${port}/state`, {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ state }),
+					signal: AbortSignal.timeout(1000),
+				});
+			} catch {
+				// Silent failure - server may not be running
+			}
+		});
+
+	// Hooks subcommand group
+	const hooksCmd = program.command("hooks").description("Manage Claude Code hooks");
+
+	// hooks status
+	hooksCmd
+		.command("status")
+		.description("Show hooks installation status")
+		.option("-g, --global", "Check global settings")
+		.option("-p, --project", "Check project settings", true)
+		.action(async (options) => {
+			const path = options.global ? getGlobalClaudeSettingsPath() : getProjectClaudeSettingsPath();
+
+			const status = await getHookStatus(path);
+
+			log(t`${bold("Hooks Status")}`);
+			log(t`${dim("─".repeat(40))}`);
+			log(t`  ${bold("Path:")} ${status.path}`);
+			log(t`  ${bold("File exists:")} ${status.exists ? green("yes") : yellow("no")}`);
+
+			if (status.installed) {
+				log(t`  ${green("✓")} ${status.hookCount} byteside hooks installed`);
+			} else {
+				log(t`  ${yellow("!")} No byteside hooks found`);
+				log(t``);
+				log(t`  ${dim("Run 'byteside init' to install hooks")}`);
+			}
+		});
+
+	// hooks uninstall
+	hooksCmd
+		.command("uninstall")
+		.description("Remove byteside hooks")
+		.option("-g, --global", "Remove from global settings")
+		.option("-p, --project", "Remove from project settings", true)
+		.option("--all", "Remove from both global and project settings")
+		.option("--no-backup", "Skip backup creation")
+		.action(async (options) => {
+			const paths: string[] = [];
+
+			if (options.all) {
+				paths.push(getGlobalClaudeSettingsPath());
+				paths.push(getProjectClaudeSettingsPath());
+			} else if (options.global) {
+				paths.push(getGlobalClaudeSettingsPath());
+			} else {
+				paths.push(getProjectClaudeSettingsPath());
+			}
+
+			for (const path of paths) {
+				const result = await uninstallHooks(path, {
+					noBackup: !options.backup,
+				});
+
+				if (result.success) {
+					printStatus(result.message, "success");
+					if (result.backupPath) {
+						printStatus(`Backup created: ${result.backupPath}`, "info");
+					}
+				} else {
+					printStatus(result.message, "error");
+				}
+			}
+		});
+
+	// hooks show
+	hooksCmd
+		.command("show")
+		.description("Preview generated hook configuration")
+		.action(() => {
+			const hooks = generateHookConfig();
+			console.log(JSON.stringify({ hooks }, null, "\t"));
+		});
 
 	await program.parseAsync();
 }

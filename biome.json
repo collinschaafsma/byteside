@@ -19,6 +19,6 @@
 		}
 	},
 	"files": {
-		"includes": ["**/*.ts", "**/*.js", "**/*.json", "!.claude"]
+		"includes": ["**/*.ts", "**/*.js", "**/*.json", "!.claude", "!.output"]
 	}
 }

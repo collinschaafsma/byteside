@@ -1,3 +1,6 @@
+import { existsSync } from "node:fs";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { REQUIRED_STATES } from "./types";
 
 /**
@@ -223,4 +226,97 @@ export function getStateConfig(manifest: AvatarManifest, state: string): AvatarS
 
 	// No fallback available
 	return null;
+}
+
+/**
+ * Result of full avatar validation including file checks.
+ */
+export interface AvatarValidationResult extends ManifestValidationResult {
+	missingFiles: string[];
+}
+
+/**
+ * Validate that all files referenced in a manifest exist on disk.
+ *
+ * @param manifest The parsed avatar manifest
+ * @param avatarDir The directory containing the avatar files
+ * @returns Validation result with missing files
+ */
+export function validateAvatarFiles(
+	manifest: AvatarManifest,
+	avatarDir: string,
+): AvatarValidationResult {
+	const missingFiles: string[] = [];
+
+	for (const [stateName, stateConfig] of Object.entries(manifest.states)) {
+		const filePath = join(avatarDir, stateConfig.file);
+		if (!existsSync(filePath)) {
+			missingFiles.push(`State "${stateName}": missing file "${stateConfig.file}"`);
+		}
+	}
+
+	return {
+		valid: missingFiles.length === 0,
+		errors: missingFiles.length > 0 ? missingFiles : [],
+		warnings: [],
+		manifest,
+		missingFiles,
+	};
+}
+
+/**
+ * Fully validate an avatar directory.
+ * Checks manifest exists, parses and validates it, then checks all referenced files exist.
+ *
+ * @param avatarDir The directory containing the avatar
+ * @returns Full validation result
+ */
+export async function validateAvatar(avatarDir: string): Promise<AvatarValidationResult> {
+	const manifestPath = join(avatarDir, "manifest.json");
+
+	// Check manifest exists
+	if (!existsSync(manifestPath)) {
+		return {
+			valid: false,
+			errors: ["manifest.json not found"],
+			warnings: [],
+			missingFiles: [],
+		};
+	}
+
+	// Read and parse manifest
+	let manifestContent: string;
+	try {
+		manifestContent = await readFile(manifestPath, "utf-8");
+	} catch (err) {
+		return {
+			valid: false,
+			errors: [`Failed to read manifest.json: ${err instanceof Error ? err.message : String(err)}`],
+			warnings: [],
+			missingFiles: [],
+		};
+	}
+
+	// Parse and validate manifest schema
+	const result = parseManifest(manifestContent);
+	if (!result.valid || !result.manifest) {
+		return {
+			valid: false,
+			errors: result.errors,
+			warnings: result.warnings,
+			missingFiles: [],
+		};
+	}
+
+	// Validate files exist
+	const fileResult = validateAvatarFiles(result.manifest, avatarDir);
+
+	// Combine schema warnings with file errors
+	return {
+		valid: fileResult.valid,
+		errors: fileResult.errors,
+		warnings: result.warnings,
+		manifest: result.manifest,
+		missingFiles: fileResult.missingFiles,
+	};
 }

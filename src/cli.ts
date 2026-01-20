@@ -8,7 +8,9 @@ import { bold, cyan, dim, green, type RGBA, red, type StyledText, t, yellow } fr
  */
 import { program } from "commander";
 import open from "open";
+import { discoverAvatars, ensureUserAvatars } from "./avatar.js";
 import { ensureGlobalConfig, loadBytesideConfig } from "./config.js";
+import { validateAvatar } from "./manifest.js";
 
 // Get the root directory (where nitro.config.ts is)
 const __filename = fileURLToPath(import.meta.url);
@@ -190,34 +192,120 @@ function startServer(port: number, avatar: string, shouldOpen: boolean): void {
 }
 
 /**
- * Main entry point - loads config and starts the server.
+ * List all installed avatars.
+ */
+async function listAvatars(): Promise<void> {
+	const config = await loadBytesideConfig();
+	const paths = config.avatarPaths ?? ["~/.byteside/avatars"];
+	const avatars = await discoverAvatars(paths);
+
+	if (avatars.length === 0) {
+		log(t`${yellow("No avatars found.")}`);
+		log(t`${dim("Run 'byteside' once to install the default avatar.")}`);
+		return;
+	}
+
+	// Calculate column widths
+	const nameWidth = Math.max(20, ...avatars.map((a) => a.name.length));
+	const authorWidth = Math.max(20, ...avatars.map((a) => a.author.length));
+
+	// Print header
+	log(
+		t`${bold("Name".padEnd(nameWidth))}  ${bold("Author".padEnd(authorWidth))}  ${bold("Version")}`,
+	);
+	log(t`${dim("─".repeat(nameWidth + authorWidth + 20))}`);
+
+	// Print each avatar
+	for (const avatar of avatars) {
+		log(
+			t`${avatar.name.padEnd(nameWidth)}  ${avatar.author.padEnd(authorWidth)}  ${avatar.version}`,
+		);
+	}
+}
+
+/**
+ * Validate an avatar package.
+ */
+async function validateAvatarCommand(path: string): Promise<void> {
+	const avatarPath = resolve(path);
+	const result = await validateAvatar(avatarPath);
+
+	if (!result.valid) {
+		printStatus("Validation failed", "error");
+		log(t``);
+
+		for (const error of result.errors) {
+			log(t`  ${red("✗")} ${error}`);
+		}
+
+		for (const warning of result.warnings) {
+			log(t`  ${yellow("!")} ${warning}`);
+		}
+
+		process.exit(1);
+	}
+
+	// Success - show avatar info
+	printStatus("Validation passed", "success");
+	log(t``);
+
+	if (result.manifest) {
+		log(t`  ${bold("Name:")}     ${result.manifest.name}`);
+		log(t`  ${bold("Author:")}   ${result.manifest.author}`);
+		log(t`  ${bold("Version:")}  ${result.manifest.version}`);
+		log(t`  ${bold("Format:")}   ${result.manifest.format}`);
+		log(t`  ${bold("States:")}   ${Object.keys(result.manifest.states).join(", ")}`);
+	}
+
+	// Show warnings if any
+	if (result.warnings.length > 0) {
+		log(t``);
+		log(t`  ${bold("Warnings:")}`);
+		for (const warning of result.warnings) {
+			log(t`  ${yellow("!")} ${warning}`);
+		}
+	}
+}
+
+/**
+ * Main entry point - sets up CLI and parses commands.
  */
 async function main(): Promise<void> {
-	// Ensure global config exists on first run
-	await ensureGlobalConfig();
-
 	// Load configuration from files
 	const config = await loadBytesideConfig();
 
-	// Configure CLI with config values as defaults
 	program
 		.name("byteside")
 		.description("Animated avatar companion for AI coding agents")
 		.version("0.0.1")
+		.hook("preAction", async () => {
+			// Ensure global config and user avatars exist on first run
+			await ensureGlobalConfig();
+			await ensureUserAvatars();
+		});
+
+	// Default command: start server
+	program
 		.option("-p, --port <number>", "Port to run server on", String(config.server?.port ?? 3333))
 		.option("-a, --avatar <name>", "Avatar to use", config.avatar ?? "default")
 		.option("--no-open", "Don't auto-open browser")
-		.parse();
+		.action((options) => {
+			const port = parseInt(options.port, 10);
+			const avatar = options.avatar;
+			const shouldOpen = options.open !== false && config.viewer?.autoOpen !== false;
+			startServer(port, avatar, shouldOpen);
+		});
 
-	const options = program.opts();
+	// List command
+	program.command("list").description("List installed avatars").action(listAvatars);
 
-	// CLI args override config values
-	const port = parseInt(options.port, 10);
-	const avatar = options.avatar;
-	// --no-open CLI flag or viewer.autoOpen: false in config both disable auto-open
-	const shouldOpen = options.open !== false && config.viewer?.autoOpen !== false;
+	// Validate command
+	program
+		.command("validate <path>")
+		.description("Validate an avatar package")
+		.action(validateAvatarCommand);
 
-	startServer(port, avatar, shouldOpen);
+	await program.parseAsync();
 }
 
 main();

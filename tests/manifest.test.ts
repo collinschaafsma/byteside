@@ -1,10 +1,18 @@
-import { describe, expect, it } from "vitest";
+import { mkdir, rm, writeFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
 	type AvatarManifest,
 	getStateConfig,
 	parseManifest,
+	validateAvatar,
+	validateAvatarFiles,
 	validateManifest,
 } from "../src/manifest";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const validManifest: AvatarManifest = {
 	name: "test-avatar",
@@ -374,6 +382,206 @@ describe("manifest validation", () => {
 			const config = getStateConfig(manifestWithCustom, "dancing");
 
 			expect(config).toEqual({ file: "dancing.webm" });
+		});
+	});
+
+	describe("validateAvatarFiles", () => {
+		const testDir = join(__dirname, ".test-manifest-files");
+
+		beforeAll(async () => {
+			await mkdir(testDir, { recursive: true });
+			// Create some test files
+			await writeFile(join(testDir, "idle.webm"), "fake video content");
+			await writeFile(join(testDir, "thinking.webm"), "fake video content");
+		});
+
+		afterAll(async () => {
+			await rm(testDir, { recursive: true, force: true });
+		});
+
+		it("returns valid when all files exist", () => {
+			const manifest: AvatarManifest = {
+				...validManifest,
+				states: {
+					idle: { file: "idle.webm" },
+					thinking: { file: "thinking.webm" },
+				},
+			};
+
+			const result = validateAvatarFiles(manifest, testDir);
+
+			expect(result.valid).toBe(true);
+			expect(result.errors).toHaveLength(0);
+			expect(result.missingFiles).toHaveLength(0);
+		});
+
+		it("detects missing files", () => {
+			const manifest: AvatarManifest = {
+				...validManifest,
+				states: {
+					idle: { file: "idle.webm" },
+					missing: { file: "nonexistent.webm" },
+				},
+			};
+
+			const result = validateAvatarFiles(manifest, testDir);
+
+			expect(result.valid).toBe(false);
+			expect(result.missingFiles).toHaveLength(1);
+			expect(result.missingFiles[0]).toContain("nonexistent.webm");
+		});
+
+		it("reports all missing files", () => {
+			const manifest: AvatarManifest = {
+				...validManifest,
+				states: {
+					first: { file: "missing1.webm" },
+					second: { file: "missing2.webm" },
+				},
+			};
+
+			const result = validateAvatarFiles(manifest, testDir);
+
+			expect(result.valid).toBe(false);
+			expect(result.missingFiles).toHaveLength(2);
+		});
+
+		it("includes state name in error messages", () => {
+			const manifest: AvatarManifest = {
+				...validManifest,
+				states: {
+					idle: { file: "missing.webm" },
+				},
+			};
+
+			const result = validateAvatarFiles(manifest, testDir);
+
+			expect(result.missingFiles[0]).toContain("idle");
+		});
+	});
+
+	describe("validateAvatar", () => {
+		const testDir = join(__dirname, ".test-validate-avatar");
+
+		beforeAll(async () => {
+			await mkdir(testDir, { recursive: true });
+
+			// Create valid avatar directory
+			const validDir = join(testDir, "valid");
+			await mkdir(validDir, { recursive: true });
+			await writeFile(
+				join(validDir, "manifest.json"),
+				JSON.stringify({
+					name: "valid-avatar",
+					author: "Test",
+					version: "1.0.0",
+					format: "webm",
+					states: {
+						idle: { file: "idle.webm" },
+					},
+				}),
+			);
+			await writeFile(join(validDir, "idle.webm"), "fake video");
+
+			// Create avatar with missing files
+			const missingFilesDir = join(testDir, "missing-files");
+			await mkdir(missingFilesDir, { recursive: true });
+			await writeFile(
+				join(missingFilesDir, "manifest.json"),
+				JSON.stringify({
+					name: "missing-files",
+					author: "Test",
+					version: "1.0.0",
+					format: "webm",
+					states: {
+						idle: { file: "idle.webm" },
+					},
+				}),
+			);
+
+			// Create directory with invalid JSON
+			const invalidJsonDir = join(testDir, "invalid-json");
+			await mkdir(invalidJsonDir, { recursive: true });
+			await writeFile(join(invalidJsonDir, "manifest.json"), "{ invalid }");
+
+			// Create directory with invalid schema
+			const invalidSchemaDir = join(testDir, "invalid-schema");
+			await mkdir(invalidSchemaDir, { recursive: true });
+			await writeFile(
+				join(invalidSchemaDir, "manifest.json"),
+				JSON.stringify({ name: "incomplete" }),
+			);
+
+			// Create empty directory (no manifest)
+			const noManifestDir = join(testDir, "no-manifest");
+			await mkdir(noManifestDir, { recursive: true });
+		});
+
+		afterAll(async () => {
+			await rm(testDir, { recursive: true, force: true });
+		});
+
+		it("validates a correct avatar directory", async () => {
+			const result = await validateAvatar(join(testDir, "valid"));
+
+			expect(result.valid).toBe(true);
+			expect(result.errors).toHaveLength(0);
+			expect(result.manifest).toBeDefined();
+			expect(result.manifest?.name).toBe("valid-avatar");
+		});
+
+		it("fails when manifest.json is missing", async () => {
+			const result = await validateAvatar(join(testDir, "no-manifest"));
+
+			expect(result.valid).toBe(false);
+			expect(result.errors).toContain("manifest.json not found");
+		});
+
+		it("fails when manifest has invalid JSON", async () => {
+			const result = await validateAvatar(join(testDir, "invalid-json"));
+
+			expect(result.valid).toBe(false);
+			expect(result.errors.some((e) => e.includes("JSON"))).toBe(true);
+		});
+
+		it("fails when manifest has invalid schema", async () => {
+			const result = await validateAvatar(join(testDir, "invalid-schema"));
+
+			expect(result.valid).toBe(false);
+			expect(result.errors.length).toBeGreaterThan(0);
+		});
+
+		it("fails when video files are missing", async () => {
+			const result = await validateAvatar(join(testDir, "missing-files"));
+
+			expect(result.valid).toBe(false);
+			expect(result.missingFiles).toHaveLength(1);
+			expect(result.missingFiles[0]).toContain("idle.webm");
+		});
+
+		it("includes warnings from schema validation", async () => {
+			// Create avatar with warnings (minimal manifest missing recommended states)
+			const warningDir = join(testDir, "with-warnings");
+			await mkdir(warningDir, { recursive: true });
+			await writeFile(
+				join(warningDir, "manifest.json"),
+				JSON.stringify({
+					name: "warning-avatar",
+					author: "Test",
+					version: "1.0.0",
+					format: "webm",
+					states: {
+						idle: { file: "idle.webm" },
+					},
+				}),
+			);
+			await writeFile(join(warningDir, "idle.webm"), "fake video");
+
+			const result = await validateAvatar(warningDir);
+
+			expect(result.valid).toBe(true);
+			expect(result.warnings.length).toBeGreaterThan(0);
+			expect(result.warnings.some((w) => w.includes("thinking"))).toBe(true);
 		});
 	});
 });

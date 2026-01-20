@@ -8,6 +8,7 @@ import { bold, cyan, dim, green, type RGBA, red, type StyledText, t, yellow } fr
  */
 import { program } from "commander";
 import open from "open";
+import { ensureGlobalConfig, loadBytesideConfig } from "./config.js";
 
 // Get the root directory (where nitro.config.ts is)
 const __filename = fileURLToPath(import.meta.url);
@@ -97,21 +98,6 @@ function printStatus(message: string, type: "info" | "success" | "warn" | "error
 	log(t`  ${icon} ${message}`);
 }
 
-// Parse CLI arguments
-program
-	.name("byteside")
-	.description("Animated avatar companion for AI coding agents")
-	.version("0.0.1")
-	.option("-p, --port <number>", "Port to run server on", "3333")
-	.option("-a, --avatar <name>", "Avatar to use", "default")
-	.option("--no-open", "Don't auto-open browser")
-	.parse();
-
-const options = program.opts();
-const port = parseInt(options.port, 10);
-const avatar = options.avatar;
-const shouldOpen = options.open !== false;
-
 // Nitro process reference for cleanup
 let nitroProcess: ReturnType<typeof spawn> | null = null;
 
@@ -135,9 +121,9 @@ process.on("SIGINT", () => shutdown("SIGINT"));
 process.on("SIGTERM", () => shutdown("SIGTERM"));
 
 /**
- * Main entry point
+ * Start the byteside server with the given configuration.
  */
-function main(): void {
+function startServer(port: number, avatar: string, shouldOpen: boolean): void {
 	printBanner();
 	printStatus(`Starting server on port ${port}...`);
 	printStatus(`Avatar: ${avatar}`);
@@ -201,6 +187,37 @@ function main(): void {
 		printStatus(`Failed to start server: ${err.message}`, "error");
 		process.exit(1);
 	});
+}
+
+/**
+ * Main entry point - loads config and starts the server.
+ */
+async function main(): Promise<void> {
+	// Ensure global config exists on first run
+	await ensureGlobalConfig();
+
+	// Load configuration from files
+	const config = await loadBytesideConfig();
+
+	// Configure CLI with config values as defaults
+	program
+		.name("byteside")
+		.description("Animated avatar companion for AI coding agents")
+		.version("0.0.1")
+		.option("-p, --port <number>", "Port to run server on", String(config.server?.port ?? 3333))
+		.option("-a, --avatar <name>", "Avatar to use", config.avatar ?? "default")
+		.option("--no-open", "Don't auto-open browser")
+		.parse();
+
+	const options = program.opts();
+
+	// CLI args override config values
+	const port = parseInt(options.port, 10);
+	const avatar = options.avatar;
+	// --no-open CLI flag or viewer.autoOpen: false in config both disable auto-open
+	const shouldOpen = options.open !== false && config.viewer?.autoOpen !== false;
+
+	startServer(port, avatar, shouldOpen);
 }
 
 main();

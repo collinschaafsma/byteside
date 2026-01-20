@@ -31,6 +31,7 @@
 	"license": "MIT",
 	"dependencies": {
 		"@opentui/core": "^0.1.74",
+		"c12": "^3.3.3",
 		"commander": "^14.0.2",
 		"nitro": "^3.0.1-alpha.1",
 		"open": "^11.0.0"

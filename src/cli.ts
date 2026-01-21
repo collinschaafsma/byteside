@@ -8,7 +8,7 @@ import { bold, cyan, dim, green, type RGBA, red, type StyledText, t, yellow } fr
  */
 import { program } from "commander";
 import open from "open";
-import { discoverAvatars, ensureUserAvatars } from "./avatar.js";
+import { discoverAvatars, ensureUserAvatars, resolveAvatarPath } from "./avatar.js";
 import { ensureGlobalConfig, loadBytesideConfig } from "./config.js";
 import {
 	generateHookConfig,
@@ -18,7 +18,12 @@ import {
 	installHooks,
 	uninstallHooks,
 } from "./hooks.js";
-import { validateAvatar } from "./manifest.js";
+import { type AvatarManifest, validateAvatar } from "./manifest.js";
+import {
+	createTerminalRenderer,
+	isTerminalCapable,
+	type TerminalRenderer,
+} from "./terminal/index.js";
 import { type AvatarState, REQUIRED_STATES } from "./types.js";
 
 // Get the root directory (where nitro.config.ts is)
@@ -174,13 +179,20 @@ function printStatus(message: string, type: "info" | "success" | "warn" | "error
 	log(t`  ${icon} ${message}`);
 }
 
-// Nitro process reference for cleanup
+// Process references for cleanup
 let nitroProcess: ReturnType<typeof spawn> | null = null;
+let terminalRenderer: TerminalRenderer | null = null;
 
 /**
  * Graceful shutdown handler
  */
 function shutdown(signal: string): void {
+	// Stop terminal renderer first (restores terminal state)
+	if (terminalRenderer) {
+		terminalRenderer.stop();
+		terminalRenderer = null;
+	}
+
 	log(t``);
 	printStatus(`Received ${signal}, shutting down...`, "warn");
 
@@ -197,15 +209,40 @@ process.on("SIGINT", () => shutdown("SIGINT"));
 process.on("SIGTERM", () => shutdown("SIGTERM"));
 
 /**
+ * Options for starting the server.
+ */
+interface StartServerOptions {
+	port: number;
+	avatar: string;
+	shouldOpen: boolean;
+	noTerminal: boolean;
+	manifest: AvatarManifest | null;
+	avatarPath: string | null;
+}
+
+/**
  * Start the byteside server with the given configuration.
  */
-function startServer(port: number, avatar: string, shouldOpen: boolean): void {
+async function startServer(options: StartServerOptions): Promise<void> {
+	const { port, avatar, shouldOpen, noTerminal, manifest, avatarPath } = options;
+
 	printBanner();
 	printStatus(`Starting server on port ${port}...`);
 	printStatus(`Avatar: ${avatar}`);
 
 	const url = `http://localhost:${port}`;
 	let serverReady = false;
+
+	// Check if terminal mode is available and enabled
+	const useTerminalMode =
+		!noTerminal &&
+		manifest?.terminal?.enabled === true &&
+		avatarPath !== null &&
+		isTerminalCapable();
+
+	if (useTerminalMode) {
+		printStatus("Terminal mode enabled", "info");
+	}
 
 	// Spawn nitro dev process with runtime config via environment variable
 	nitroProcess = spawn("bun", ["x", "nitro", "dev", "--port", port.toString()], {
@@ -227,8 +264,24 @@ function startServer(port: number, avatar: string, shouldOpen: boolean): void {
 			serverReady = true;
 			printStatus(`Server running at ${url}`, "success");
 
-			// Auto-open browser
-			if (shouldOpen) {
+			// Start terminal renderer or open browser based on mode
+			if (useTerminalMode && manifest && avatarPath) {
+				// Terminal mode: start renderer
+				const renderer = createTerminalRenderer(manifest, avatarPath, 12);
+				if (renderer) {
+					terminalRenderer = renderer;
+					renderer
+						.init()
+						.then(() => renderer.start(url))
+						.then(() => {
+							printStatus("Terminal renderer started", "success");
+						})
+						.catch((err) => {
+							printStatus(`Failed to start terminal renderer: ${err.message}`, "error");
+						});
+				}
+			} else if (shouldOpen) {
+				// Browser mode: auto-open browser
 				printStatus("Opening viewer...");
 				openViewer(url)
 					.then((mode) => {
@@ -367,11 +420,33 @@ async function main(): Promise<void> {
 		.option("-p, --port <number>", "Port to run server on", String(config.server?.port ?? 3333))
 		.option("-a, --avatar <name>", "Avatar to use", config.avatar ?? "default")
 		.option("--no-open", "Don't auto-open browser")
-		.action((options) => {
+		.option("--no-terminal", "Disable terminal avatar rendering")
+		.action(async (options) => {
 			const port = parseInt(options.port, 10);
 			const avatar = options.avatar;
 			const shouldOpen = options.open !== false && config.viewer?.autoOpen !== false;
-			startServer(port, avatar, shouldOpen);
+			const noTerminal = options.terminal === false;
+
+			// Try to resolve avatar path and load manifest
+			const avatarPaths = config.avatarPaths ?? ["~/.byteside/avatars"];
+			const avatarPath = await resolveAvatarPath(avatar, avatarPaths);
+			let manifest: AvatarManifest | null = null;
+
+			if (avatarPath) {
+				const result = await validateAvatar(avatarPath);
+				if (result.valid && result.manifest) {
+					manifest = result.manifest;
+				}
+			}
+
+			await startServer({
+				port,
+				avatar,
+				shouldOpen,
+				noTerminal,
+				manifest,
+				avatarPath,
+			});
 		});
 
 	// List command

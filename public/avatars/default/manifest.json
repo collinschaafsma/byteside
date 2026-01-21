@@ -21,5 +21,43 @@
 		"success": "#22c55e",
 		"error": "#ef4444",
 		"background": "#0a0a0a"
+	},
+	"terminal": {
+		"enabled": true,
+		"mode": "ascii",
+		"framerate": 4,
+		"size": { "width": 24, "height": 12 },
+		"states": {
+			"idle": {
+				"frames": [
+					"terminal/idle/01.txt",
+					"terminal/idle/02.txt",
+					"terminal/idle/03.txt",
+					"terminal/idle/04.txt"
+				]
+			},
+			"thinking": {
+				"frames": [
+					"terminal/thinking/01.txt",
+					"terminal/thinking/02.txt",
+					"terminal/thinking/03.txt"
+				]
+			},
+			"writing": {
+				"frames": ["terminal/writing/01.txt", "terminal/writing/02.txt", "terminal/writing/03.txt"]
+			},
+			"bash": {
+				"frames": ["terminal/bash/01.txt", "terminal/bash/02.txt", "terminal/bash/03.txt"]
+			},
+			"error": {
+				"frames": ["terminal/error/01.txt", "terminal/error/02.txt"]
+			},
+			"success": {
+				"frames": ["terminal/success/01.txt", "terminal/success/02.txt"]
+			},
+			"waiting": {
+				"frames": ["terminal/waiting/01.txt", "terminal/waiting/02.txt", "terminal/waiting/03.txt"]
+			}
+		}
 	}
 }

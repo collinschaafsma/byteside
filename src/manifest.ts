@@ -24,6 +24,25 @@ export interface AvatarPalette {
 }
 
 /**
+ * Terminal state configuration for a single avatar state.
+ */
+export interface TerminalStateConfig {
+	frames?: string[]; // Array of ASCII frame file paths (for mode: "ascii")
+	image?: string; // Single image path (for mode: "image")
+}
+
+/**
+ * Terminal rendering configuration.
+ */
+export interface TerminalConfig {
+	enabled: boolean;
+	mode: "ascii" | "image";
+	framerate?: number; // Default: 8fps
+	size?: { width: number; height: number };
+	states: Record<string, TerminalStateConfig>;
+}
+
+/**
  * Full avatar manifest schema.
  */
 export interface AvatarManifest {
@@ -36,6 +55,7 @@ export interface AvatarManifest {
 	loop?: boolean;
 	states: Record<string, AvatarStateConfig>;
 	palette?: AvatarPalette;
+	terminal?: TerminalConfig;
 }
 
 /**
@@ -173,6 +193,76 @@ export function validateManifest(manifest: unknown): ManifestValidationResult {
 				const value = manifest.palette[field];
 				if (value !== undefined && typeof value !== "string") {
 					errors.push(`"palette.${field}" must be a string`);
+				}
+			}
+		}
+	}
+
+	// Terminal configuration validation
+	if (manifest.terminal !== undefined) {
+		if (!isObject(manifest.terminal)) {
+			errors.push('"terminal" must be an object');
+		} else {
+			const terminal = manifest.terminal;
+
+			if (typeof terminal.enabled !== "boolean") {
+				errors.push('"terminal.enabled" must be a boolean');
+			}
+
+			if (terminal.mode !== "ascii" && terminal.mode !== "image") {
+				errors.push('"terminal.mode" must be "ascii" or "image"');
+			}
+
+			if (terminal.framerate !== undefined && typeof terminal.framerate !== "number") {
+				errors.push('"terminal.framerate" must be a number');
+			}
+
+			if (terminal.size !== undefined) {
+				if (!isObject(terminal.size)) {
+					errors.push('"terminal.size" must be an object');
+				} else {
+					if (typeof terminal.size.width !== "number") {
+						errors.push('"terminal.size.width" must be a number');
+					}
+					if (typeof terminal.size.height !== "number") {
+						errors.push('"terminal.size.height" must be a number');
+					}
+				}
+			}
+
+			if (!isObject(terminal.states)) {
+				errors.push('"terminal.states" must be an object');
+			} else {
+				for (const [stateName, stateConfig] of Object.entries(terminal.states)) {
+					if (!isObject(stateConfig)) {
+						errors.push(`"terminal.states.${stateName}" must be an object`);
+						continue;
+					}
+
+					const config = stateConfig as Record<string, unknown>;
+					const hasFrames = config.frames !== undefined;
+					const hasImage = config.image !== undefined;
+
+					if (!hasFrames && !hasImage) {
+						errors.push(
+							`"terminal.states.${stateName}" must have "frames" (for ascii) or "image" (for image mode)`,
+						);
+					}
+
+					if (hasFrames && !Array.isArray(config.frames)) {
+						errors.push(`"terminal.states.${stateName}.frames" must be an array`);
+					} else if (hasFrames) {
+						const frames = config.frames as unknown[];
+						for (let i = 0; i < frames.length; i++) {
+							if (typeof frames[i] !== "string") {
+								errors.push(`"terminal.states.${stateName}.frames[${i}]" must be a string`);
+							}
+						}
+					}
+
+					if (hasImage && typeof config.image !== "string") {
+						errors.push(`"terminal.states.${stateName}.image" must be a string`);
+					}
 				}
 			}
 		}

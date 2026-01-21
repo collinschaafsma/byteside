@@ -135,3 +135,17 @@ export async function discoverAvatars(paths: string[]): Promise<DiscoveredAvatar
 
 	return avatars;
 }
+
+/**
+ * Resolve an avatar by name to its path.
+ * Searches configured avatar paths for a matching avatar.
+ *
+ * @param name Avatar name to find
+ * @param paths Array of paths to search
+ * @returns Path to the avatar directory, or null if not found
+ */
+export async function resolveAvatarPath(name: string, paths: string[]): Promise<string | null> {
+	const avatars = await discoverAvatars(paths);
+	const found = avatars.find((a) => a.name === name);
+	return found?.path ?? null;
+}

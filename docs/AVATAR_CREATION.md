@@ -218,6 +218,18 @@ echo '{"avatar": "my-avatar"}' > ~/.byteside/config.json
    ```
 4. Verify smooth transitions and looping
 
+## Terminal Avatars
+
+byteside also supports terminal-based avatars using ASCII art or inline images. This is a lightweight alternative to the browser viewer.
+
+To add terminal support to your avatar, see the [Terminal Avatar Guide](TERMINAL_AVATAR.md) which covers:
+
+- Adding terminal configuration to your manifest
+- Creating ASCII art frames
+- Animation tips and frame management
+- Converting video to ASCII art
+- Image mode for supported terminals
+
 ## Creating Assets from Scratch
 
 Want to create your own animated character using AI tools? See the comprehensive [Kling Motion Control Guide](KLING-MOTION-CTRL.md) which covers:

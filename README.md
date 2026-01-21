@@ -147,6 +147,7 @@ Start the byteside server.
 | `-p, --port <number>` | Port to run server on (default: 3333) |
 | `-a, --avatar <name>` | Avatar to use (default: from config) |
 | `--no-open` | Don't auto-open browser |
+| `--no-terminal` | Disable terminal avatar rendering |
 | `-V, --version` | Show version number |
 | `-h, --help` | Show help |
 
@@ -267,6 +268,49 @@ byteside --avatar my-avatar
 For detailed instructions, see the [Avatar Creation Guide](docs/AVATAR_CREATION.md).
 
 For creating animated assets from scratch using AI tools like Midjourney and Kling, see the [Kling Motion Control Guide](docs/KLING-MOTION-CTRL.md).
+
+## Terminal Mode
+
+byteside supports rendering avatars directly in your terminal using ASCII art or images, as an alternative to the browser viewer.
+
+### Enabling Terminal Mode
+
+Add a `terminal` block to your avatar's `manifest.json`:
+
+```json
+{
+  "name": "my-avatar",
+  "terminal": {
+    "enabled": true,
+    "mode": "ascii",
+    "framerate": 8,
+    "size": { "width": 40, "height": 20 },
+    "states": {
+      "idle": { "frames": ["terminal/idle/01.txt", "terminal/idle/02.txt"] },
+      "thinking": { "frames": ["terminal/thinking/01.txt"] }
+    }
+  }
+}
+```
+
+When `terminal.enabled` is `true`, byteside renders the avatar in your terminal instead of opening a browser window.
+
+### Modes
+
+| Mode | Description | Best For |
+|------|-------------|----------|
+| `ascii` | Animated ASCII art frames | Universal compatibility, retro aesthetic |
+| `image` | Inline images | iTerm2, Kitty, WezTerm |
+
+### Disabling Terminal Mode
+
+Force browser mode even if the avatar supports terminal:
+
+```bash
+byteside --no-terminal
+```
+
+For complete instructions on creating terminal avatars, see the [Terminal Avatar Guide](docs/TERMINAL_AVATAR.md).
 
 ## API Reference
 

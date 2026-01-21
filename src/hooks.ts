@@ -256,7 +256,10 @@ export function mergeHooks(
 
 	// Add byteside UserPromptSubmit hooks
 	if (bytesideHooks.UserPromptSubmit) {
-		mergedHooks.UserPromptSubmit = [...(mergedHooks.UserPromptSubmit ?? []), ...bytesideHooks.UserPromptSubmit];
+		mergedHooks.UserPromptSubmit = [
+			...(mergedHooks.UserPromptSubmit ?? []),
+			...bytesideHooks.UserPromptSubmit,
+		];
 	}
 
 	// Add byteside PreToolUse hooks

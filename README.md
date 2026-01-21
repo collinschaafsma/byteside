@@ -16,13 +16,27 @@ byteside connects to [Claude Code](https://github.com/anthropics/claude-code) vi
 
 When Claude Code starts thinking, writing code, or running commands, byteside's hooks trigger state changes that update the avatar in your browser.
 
+## Installation
+
+Install byteside globally so the hooks can trigger avatar state changes:
+
+```bash
+npm install -g byteside
+```
+
+To update to the latest version:
+
+```bash
+npm update -g byteside
+```
+
 ## Quick Start
 
 Three steps to get started:
 
 ```bash
 # 1. Start the byteside server
-npx byteside
+byteside
 
 # 2. Install Claude Code hooks (in your project directory)
 byteside init
@@ -31,6 +45,8 @@ byteside init
 ```
 
 The browser opens automatically showing your avatar. When you use Claude Code, the avatar reflects what it's doing in real-time.
+
+> **Note:** Global installation is required because Claude Code hooks run `byteside trigger <state>` commands. Using `npx byteside` to start the server won't make the `byteside` command available for hooks.
 
 ## Running Multiple Instances
 

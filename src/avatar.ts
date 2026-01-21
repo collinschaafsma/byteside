@@ -28,9 +28,15 @@ export function getUserAvatarsDir(): string {
 
 /**
  * Get the bundled avatars directory path.
- * @returns Path to the bundled public/avatars directory
+ * @returns Path to the bundled avatars directory
  */
 export function getBundledAvatarsDir(): string {
+	// When installed as npm package, use .output/public/avatars
+	const outputPath = resolve(__dirname, "..", ".output", "public", "avatars");
+	if (existsSync(outputPath)) {
+		return outputPath;
+	}
+	// Fall back to public/avatars for development
 	return resolve(__dirname, "..", "public", "avatars");
 }
 

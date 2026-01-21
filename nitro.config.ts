@@ -1,7 +1,7 @@
 import { defineNitroConfig } from "nitro/config";
 
 export default defineNitroConfig({
-	preset: "bun",
+	preset: "node-server",
 	compatibilityDate: "2025-01-19",
 	serverDir: ".",
 	scanDirs: ["."],

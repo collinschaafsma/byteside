@@ -1,13 +1,10 @@
-#!/usr/bin/env bun
+#!/usr/bin/env node
 import { spawn } from "node:child_process";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { bold, cyan, dim, green, type RGBA, red, type StyledText, t, yellow } from "@opentui/core";
-/**
- * byteside CLI - Start the avatar server with configurable options
- */
 import { program } from "commander";
 import open from "open";
+import pc from "picocolors";
 import { discoverAvatars, ensureUserAvatars, resolveAvatarPath } from "./avatar.js";
 import { ensureGlobalConfig, loadBytesideConfig } from "./config.js";
 import {
@@ -96,72 +93,12 @@ async function openViewer(url: string): Promise<"app" | "browser"> {
 	return "browser";
 }
 
-// ANSI attribute bits (match @opentui/core internal encoding)
-const ATTR_BOLD = 1 << 0;
-const ATTR_ITALIC = 1 << 1;
-const ATTR_UNDERLINE = 1 << 2;
-const ATTR_DIM = 1 << 4;
-
-/**
- * Convert an RGBA color to ANSI escape code
- */
-function rgbaToAnsi(rgba: RGBA, isBg = false): string {
-	const [r, g, b] = rgba.toInts();
-	return isBg ? `\x1b[48;2;${r};${g};${b}m` : `\x1b[38;2;${r};${g};${b}m`;
-}
-
-/**
- * Convert TextChunk attributes to ANSI codes
- */
-function attrsToAnsi(attrs: number | undefined): string {
-	if (!attrs) return "";
-	let codes = "";
-	if (attrs & ATTR_BOLD) codes += "\x1b[1m";
-	if (attrs & ATTR_ITALIC) codes += "\x1b[3m";
-	if (attrs & ATTR_UNDERLINE) codes += "\x1b[4m";
-	if (attrs & ATTR_DIM) codes += "\x1b[2m";
-	return codes;
-}
-
-/**
- * Render StyledText to an ANSI-formatted string for console output
- */
-function renderStyledText(styled: StyledText): string {
-	const reset = "\x1b[0m";
-	let result = "";
-
-	for (const chunk of styled.chunks) {
-		let codes = "";
-
-		if (chunk.fg) {
-			codes += rgbaToAnsi(chunk.fg, false);
-		}
-		if (chunk.bg) {
-			codes += rgbaToAnsi(chunk.bg, true);
-		}
-		if (chunk.attributes) {
-			codes += attrsToAnsi(chunk.attributes);
-		}
-
-		result += codes + chunk.text + (codes ? reset : "");
-	}
-
-	return result;
-}
-
-/**
- * Log styled text to console
- */
-function log(styled: StyledText): void {
-	console.log(renderStyledText(styled));
-}
-
 /**
  * Print the startup banner
  */
 function printBanner(): void {
-	log(t`${bold(cyan("byteside"))} ${dim("- animated avatar companion")}`);
-	log(t`${dim("─".repeat(40))}`);
+	console.log(`${pc.bold(pc.cyan("byteside"))} ${pc.dim("- animated avatar companion")}`);
+	console.log(pc.dim("─".repeat(40)));
 }
 
 /**
@@ -170,13 +107,13 @@ function printBanner(): void {
 function printStatus(message: string, type: "info" | "success" | "warn" | "error" = "info"): void {
 	const icon =
 		type === "success"
-			? green("✓")
+			? pc.green("✓")
 			: type === "warn"
-				? yellow("!")
+				? pc.yellow("!")
 				: type === "error"
-					? red("✗")
-					: cyan("→");
-	log(t`  ${icon} ${message}`);
+					? pc.red("✗")
+					: pc.cyan("→");
+	console.log(`  ${icon} ${message}`);
 }
 
 // Process references for cleanup
@@ -193,7 +130,7 @@ function shutdown(signal: string): void {
 		terminalRenderer = null;
 	}
 
-	log(t``);
+	console.log();
 	printStatus(`Received ${signal}, shutting down...`, "warn");
 
 	if (nitroProcess) {
@@ -244,12 +181,14 @@ async function startServer(options: StartServerOptions): Promise<void> {
 		printStatus("Terminal mode enabled", "info");
 	}
 
-	// Spawn nitro dev process with runtime config via environment variable
-	nitroProcess = spawn("bun", ["x", "nitro", "dev", "--port", port.toString()], {
+	// Spawn built Nitro server with runtime config via environment variables
+	const serverPath = resolve(rootDir, ".output", "server", "index.mjs");
+	nitroProcess = spawn("node", [serverPath], {
 		cwd: rootDir,
 		env: {
 			...process.env,
-			// Pass avatar via environment variable (Nitro uses NITRO_PUBLIC_ prefix)
+			// Pass port and avatar via environment variables
+			NITRO_PORT: port.toString(),
 			NITRO_PUBLIC_AVATAR: avatar,
 		},
 		stdio: ["inherit", "pipe", "pipe"],
@@ -292,9 +231,9 @@ async function startServer(options: StartServerOptions): Promise<void> {
 					});
 			}
 
-			log(t``);
-			log(t`  ${dim("Press Ctrl+C to stop")}`);
-			log(t``);
+			console.log();
+			console.log(`  ${pc.dim("Press Ctrl+C to stop")}`);
+			console.log();
 		}
 
 		// Forward nitro output (filter out duplicate listening message)
@@ -331,8 +270,8 @@ async function listAvatars(): Promise<void> {
 	const avatars = await discoverAvatars(paths);
 
 	if (avatars.length === 0) {
-		log(t`${yellow("No avatars found.")}`);
-		log(t`${dim("Run 'byteside' once to install the default avatar.")}`);
+		console.log(pc.yellow("No avatars found."));
+		console.log(pc.dim("Run 'byteside' once to install the default avatar."));
 		return;
 	}
 
@@ -341,15 +280,15 @@ async function listAvatars(): Promise<void> {
 	const authorWidth = Math.max(20, ...avatars.map((a) => a.author.length));
 
 	// Print header
-	log(
-		t`${bold("Name".padEnd(nameWidth))}  ${bold("Author".padEnd(authorWidth))}  ${bold("Version")}`,
+	console.log(
+		`${pc.bold("Name".padEnd(nameWidth))}  ${pc.bold("Author".padEnd(authorWidth))}  ${pc.bold("Version")}`,
 	);
-	log(t`${dim("─".repeat(nameWidth + authorWidth + 20))}`);
+	console.log(pc.dim("─".repeat(nameWidth + authorWidth + 20)));
 
 	// Print each avatar
 	for (const avatar of avatars) {
-		log(
-			t`${avatar.name.padEnd(nameWidth)}  ${avatar.author.padEnd(authorWidth)}  ${avatar.version}`,
+		console.log(
+			`${avatar.name.padEnd(nameWidth)}  ${avatar.author.padEnd(authorWidth)}  ${avatar.version}`,
 		);
 	}
 }
@@ -363,14 +302,14 @@ async function validateAvatarCommand(path: string): Promise<void> {
 
 	if (!result.valid) {
 		printStatus("Validation failed", "error");
-		log(t``);
+		console.log();
 
 		for (const error of result.errors) {
-			log(t`  ${red("✗")} ${error}`);
+			console.log(`  ${pc.red("✗")} ${error}`);
 		}
 
 		for (const warning of result.warnings) {
-			log(t`  ${yellow("!")} ${warning}`);
+			console.log(`  ${pc.yellow("!")} ${warning}`);
 		}
 
 		process.exit(1);
@@ -378,22 +317,22 @@ async function validateAvatarCommand(path: string): Promise<void> {
 
 	// Success - show avatar info
 	printStatus("Validation passed", "success");
-	log(t``);
+	console.log();
 
 	if (result.manifest) {
-		log(t`  ${bold("Name:")}     ${result.manifest.name}`);
-		log(t`  ${bold("Author:")}   ${result.manifest.author}`);
-		log(t`  ${bold("Version:")}  ${result.manifest.version}`);
-		log(t`  ${bold("Format:")}   ${result.manifest.format}`);
-		log(t`  ${bold("States:")}   ${Object.keys(result.manifest.states).join(", ")}`);
+		console.log(`  ${pc.bold("Name:")}     ${result.manifest.name}`);
+		console.log(`  ${pc.bold("Author:")}   ${result.manifest.author}`);
+		console.log(`  ${pc.bold("Version:")}  ${result.manifest.version}`);
+		console.log(`  ${pc.bold("Format:")}   ${result.manifest.format}`);
+		console.log(`  ${pc.bold("States:")}   ${Object.keys(result.manifest.states).join(", ")}`);
 	}
 
 	// Show warnings if any
 	if (result.warnings.length > 0) {
-		log(t``);
-		log(t`  ${bold("Warnings:")}`);
+		console.log();
+		console.log(`  ${pc.bold("Warnings:")}`);
 		for (const warning of result.warnings) {
-			log(t`  ${yellow("!")} ${warning}`);
+			console.log(`  ${pc.yellow("!")} ${warning}`);
 		}
 	}
 }
@@ -526,17 +465,19 @@ async function main(): Promise<void> {
 
 			const status = await getHookStatus(path);
 
-			log(t`${bold("Hooks Status")}`);
-			log(t`${dim("─".repeat(40))}`);
-			log(t`  ${bold("Path:")} ${status.path}`);
-			log(t`  ${bold("File exists:")} ${status.exists ? green("yes") : yellow("no")}`);
+			console.log(pc.bold("Hooks Status"));
+			console.log(pc.dim("─".repeat(40)));
+			console.log(`  ${pc.bold("Path:")} ${status.path}`);
+			console.log(
+				`  ${pc.bold("File exists:")} ${status.exists ? pc.green("yes") : pc.yellow("no")}`,
+			);
 
 			if (status.installed) {
-				log(t`  ${green("✓")} ${status.hookCount} byteside hooks installed`);
+				console.log(`  ${pc.green("✓")} ${status.hookCount} byteside hooks installed`);
 			} else {
-				log(t`  ${yellow("!")} No byteside hooks found`);
-				log(t``);
-				log(t`  ${dim("Run 'byteside init' to install hooks")}`);
+				console.log(`  ${pc.yellow("!")} No byteside hooks found`);
+				console.log();
+				console.log(`  ${pc.dim("Run 'byteside init' to install hooks")}`);
 			}
 		});
 

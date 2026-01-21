@@ -1,0 +1,29 @@
+# Source files (we ship compiled output)
+src/
+routes/
+plugins/
+
+# Tests
+tests/
+
+# Config files
+*.config.ts
+tsconfig.json
+biome.json
+
+# Development directories
+.claude/
+.changeset/
+.nitro/
+docs/
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+
+# Coverage
+coverage/

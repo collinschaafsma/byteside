@@ -4,6 +4,8 @@
 
 byteside provides a visual avatar that reacts in real-time to what your AI coding assistant is doing. Watch your companion think, write code, run commands, and celebrate successes.
 
+![byteside demo](docs/byteside.gif)
+
 ## What is byteside?
 
 byteside connects to [Claude Code](https://github.com/anthropics/claude-code) via hooks to display an animated avatar that reflects the AI's current activity:

@@ -8,6 +8,8 @@ The default avatar ships with **animated ASCII art** that renders directly in yo
 
 ![byteside demo](docs/byteside.gif)
 
+![byteside terminal demo](docs/byteside-term.gif)
+
 ## What is byteside?
 
 byteside connects to [Claude Code](https://github.com/anthropics/claude-code) via hooks to display an animated avatar that reflects the AI's current activity:

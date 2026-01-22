@@ -48,8 +48,8 @@ vi.mock("../src/avatar.js", async () => {
 });
 
 import { getRouterParam } from "h3";
-import { getBundledAvatarsDir, resolveAvatarPath } from "../src/avatar.js";
 import avatarRouteHandler from "../routes/avatars/[...path].get";
+import { getBundledAvatarsDir, resolveAvatarPath } from "../src/avatar.js";
 
 // Test directory setup - must be after imports due to vi.mock hoisting
 const testDir = join(__dirname, ".test-avatar-route");
@@ -78,7 +78,9 @@ describe("GET /avatars/[...path]", () => {
 
 	beforeEach(() => {
 		vi.clearAllMocks();
-		Object.keys(mockHeaders).forEach((key) => delete mockHeaders[key]);
+		for (const key of Object.keys(mockHeaders)) {
+			delete mockHeaders[key];
+		}
 	});
 
 	it("serves manifest.json from custom avatar path", async () => {

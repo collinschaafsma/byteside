@@ -5,9 +5,7 @@ import { join } from "node:path";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { defaults, loadBytesideConfig } from "../src/config";
 
-// Use a test-specific config directory to avoid affecting real config
-const testConfigDir = join(homedir(), ".byteside-test");
-const testConfigPath = join(testConfigDir, "config.json");
+// Use real config paths for testing
 const realConfigDir = join(homedir(), ".byteside");
 const realConfigPath = join(realConfigDir, "config.json");
 
@@ -25,10 +23,6 @@ describe("config module", () => {
 		// Restore original config
 		if (originalConfig !== null) {
 			await writeFile(realConfigPath, originalConfig);
-		}
-		// Clean up test directory
-		if (existsSync(testConfigDir)) {
-			await rm(testConfigDir, { recursive: true, force: true });
 		}
 	});
 

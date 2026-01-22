@@ -2,6 +2,7 @@ import type { AvatarManifest, TerminalConfig } from "../manifest.js";
 import type { AvatarState } from "../types.js";
 import { preloadAllFrames } from "./ascii-loader.js";
 import type { StateFrames, TerminalRendererOptions } from "./types.js";
+import WebSocket from "ws";
 
 // ANSI escape codes
 const ESC = "\x1b";
@@ -148,27 +149,27 @@ export class TerminalRenderer {
 		try {
 			this.ws = new WebSocket(wsUrl);
 
-			this.ws.onmessage = (event) => {
+			this.ws.on("message", (data) => {
 				try {
-					const data = JSON.parse(event.data);
-					if (data.type === "state" && data.state) {
-						this.setState(data.state);
+					const parsed = JSON.parse(String(data));
+					if ((parsed.type === "state" || parsed.type === "welcome") && parsed.state) {
+						this.setState(parsed.state);
 					}
 				} catch {
 					// Ignore invalid messages
 				}
-			};
+			});
 
-			this.ws.onerror = () => {
+			this.ws.on("error", () => {
 				// Silent error - will retry on reconnect
-			};
+			});
 
-			this.ws.onclose = () => {
+			this.ws.on("close", () => {
 				// Attempt to reconnect after delay if still running
 				if (this.isRunning) {
 					setTimeout(() => this.connectWebSocket(serverUrl), 1000);
 				}
-			};
+			});
 		} catch {
 			// Silent error - will retry
 		}

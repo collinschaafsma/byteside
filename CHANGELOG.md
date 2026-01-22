@@ -1,5 +1,17 @@
 # byteside
 
+## 0.2.0
+
+### Minor Changes
+
+- Add custom avatar serving and fix config loading
+
+  - Add dynamic route to serve avatars from user directories (~/.byteside/avatars/)
+  - Fix config loading to properly read from ~/.byteside/config.json
+  - Add runtime config for avatar in nitro.config.ts
+  - Simplify viewer styling (black background, minimal state label)
+  - Add tests for avatar route and config loading
+
 ## 0.1.0
 
 ### Minor Changes

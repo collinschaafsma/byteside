@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { loadConfig } from "c12";
@@ -60,12 +60,26 @@ export const defaults: BytesideConfig = {
  * 4. Default values
  */
 export async function loadBytesideConfig(): Promise<BytesideConfig> {
+	// Load global config from ~/.byteside/config.json
+	let globalConfig: Partial<BytesideConfig> = {};
+	const globalConfigPath = getGlobalConfigPath();
+	if (existsSync(globalConfigPath)) {
+		try {
+			const content = await readFile(globalConfigPath, "utf-8");
+			globalConfig = JSON.parse(content);
+		} catch {
+			// Ignore parse errors
+		}
+	}
+
+	// Load project config using c12
 	const { config } = await loadConfig<BytesideConfig>({
 		name: "byteside",
 		configFile: ".byteside.json",
-		globalRc: true,
-		rcFile: "config.json",
-		defaults,
+		defaults: {
+			...defaults,
+			...globalConfig, // Global config overrides defaults
+		},
 	});
 	return config;
 }

@@ -11,4 +11,9 @@ export default defineNitroConfig({
 	typescript: {
 		strict: true,
 	},
+	runtimeConfig: {
+		public: {
+			avatar: "default",
+		},
+	},
 });

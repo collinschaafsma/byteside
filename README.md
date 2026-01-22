@@ -4,6 +4,8 @@
 
 byteside provides a visual avatar that reacts in real-time to what your AI coding assistant is doing. Watch your companion think, write code, run commands, and celebrate successes.
 
+The default avatar ships with **animated ASCII art** that renders directly in your terminal - no browser required. Just install, run, and your AI companion comes to life in the command line.
+
 ![byteside demo](docs/byteside.gif)
 
 ## What is byteside?
@@ -46,7 +48,7 @@ byteside init
 # 3. Start using Claude Code - the avatar will react automatically!
 ```
 
-The browser opens automatically showing your avatar. When you use Claude Code, the avatar reflects what it's doing in real-time.
+The default avatar renders animated ASCII art directly in your terminal. When you use Claude Code, the avatar reflects what it's doing in real-time.
 
 > **Note:** Global installation is required because Claude Code hooks run `byteside trigger <state>` commands. Using `npx byteside` to start the server won't make the `byteside` command available for hooks.
 
@@ -289,11 +291,15 @@ For creating animated assets from scratch using AI tools like Midjourney and Kli
 
 ## Terminal Mode
 
-byteside supports rendering avatars directly in your terminal using ASCII art or images, as an alternative to the browser viewer.
+byteside supports rendering avatars directly in your terminal using ASCII art or images. **The default avatar ships with ASCII terminal support enabled**, so you get an animated terminal companion out of the box.
 
-### Enabling Terminal Mode
+### Default Experience
 
-Add a `terminal` block to your avatar's `manifest.json`:
+When you run `byteside`, the default avatar displays animated ASCII art in your terminal - no configuration needed. The ASCII frames change based on what Claude Code is doing (thinking, writing, running bash commands, etc.).
+
+### Custom Terminal Avatars
+
+To add terminal support to your own avatar, add a `terminal` block to your avatar's `manifest.json`:
 
 ```json
 {
@@ -320,13 +326,15 @@ When `terminal.enabled` is `true`, byteside renders the avatar in your terminal 
 | `ascii` | Animated ASCII art frames | Universal compatibility, retro aesthetic |
 | `image` | Inline images | iTerm2, Kitty, WezTerm |
 
-### Disabling Terminal Mode
+### Using Browser Mode Instead
 
-Force browser mode even if the avatar supports terminal:
+If you prefer the browser viewer over terminal ASCII art:
 
 ```bash
 byteside --no-terminal
 ```
+
+This opens a browser window with the full video-based avatar instead of terminal rendering.
 
 For complete instructions on creating terminal avatars, see the [Terminal Avatar Guide](docs/TERMINAL_AVATAR.md).
 

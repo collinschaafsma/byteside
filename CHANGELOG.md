@@ -1,5 +1,16 @@
 # byteside
 
+## 0.3.0
+
+### Minor Changes
+
+- Fix terminal renderer WebSocket support for Node.js
+
+  - Add `ws` package for Node.js WebSocket support (WebSocket is not globally available in Node.js)
+  - Use EventEmitter-style handlers for proper Node.js compatibility
+  - Handle both "welcome" and "state" WebSocket messages for proper initial state sync
+  - Update README to highlight ASCII art terminal mode as the default experience
+
 ## 0.2.0
 
 ### Minor Changes

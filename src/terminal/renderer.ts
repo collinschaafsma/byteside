@@ -1,8 +1,8 @@
+import WebSocket from "ws";
 import type { AvatarManifest, TerminalConfig } from "../manifest.js";
 import type { AvatarState } from "../types.js";
 import { preloadAllFrames } from "./ascii-loader.js";
 import type { StateFrames, TerminalRendererOptions } from "./types.js";
-import WebSocket from "ws";
 
 // ANSI escape codes
 const ESC = "\x1b";

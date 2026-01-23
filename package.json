@@ -1,6 +1,6 @@
 {
 	"name": "byteside",
-	"version": "0.3.0",
+	"version": "0.3.1",
 	"description": "Animated avatar companion for AI coding agents",
 	"type": "module",
 	"scripts": {

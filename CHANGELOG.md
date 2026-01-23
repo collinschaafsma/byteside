@@ -1,5 +1,15 @@
 # byteside
 
+## 0.3.1
+
+### Patch Changes
+
+- Add comprehensive test coverage and fix TypeScript strict mode errors
+
+  - Add 64 new tests covering WebSocket flow, CLI commands, terminal detection, ASCII loader, and terminal renderer
+  - Fix TypeScript strict mode errors for exactOptionalPropertyTypes and noPropertyAccessFromIndexSignature
+  - Add test fixtures for terminal ASCII frames
+
 ## 0.3.0
 
 ### Minor Changes

@@ -244,7 +244,7 @@ async function startServer(options: StartServerOptions): Promise<void> {
 
 	// Handle stderr
 	nitroProcess.stderr?.on("data", (data: Buffer) => {
-		process.stderr.write(data);
+		process.stderr.write(data.toString());
 	});
 
 	// Handle process exit

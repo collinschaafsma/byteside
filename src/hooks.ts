@@ -44,7 +44,7 @@ export interface ClaudeSettings {
 export interface HookResult {
 	success: boolean;
 	message: string;
-	backupPath?: string;
+	backupPath?: string | undefined;
 }
 
 /**
@@ -232,10 +232,12 @@ export function removeBytesideHooks(settings: ClaudeSettings): ClaudeSettings {
 		}
 	}
 
-	return {
-		...settings,
-		hooks: Object.keys(newHooks).length > 0 ? newHooks : undefined,
-	};
+	// Destructure to remove hooks, then conditionally add back
+	const { hooks: _oldHooks, ...rest } = settings;
+	if (Object.keys(newHooks).length > 0) {
+		return { ...rest, hooks: newHooks };
+	}
+	return rest;
 }
 
 /**

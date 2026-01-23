@@ -30,7 +30,7 @@ export class TerminalRenderer {
 	private transitionTimeoutId: ReturnType<typeof setTimeout> | null = null;
 	private ws: WebSocket | null = null;
 	private isRunning = false;
-	private terminalImageModule: typeof import("terminal-image") | null = null;
+	private terminalImageModule: typeof import("terminal-image")["default"] | null = null;
 
 	constructor(manifest: AvatarManifest, options: TerminalRendererOptions) {
 		if (!manifest.terminal) {
@@ -51,7 +51,8 @@ export class TerminalRenderer {
 		// Load terminal-image module if using image mode
 		if (this.terminalConfig.mode === "image") {
 			try {
-				this.terminalImageModule = await import("terminal-image");
+				const mod = await import("terminal-image");
+				this.terminalImageModule = mod.default;
 			} catch {
 				console.error("Failed to load terminal-image module for image mode");
 			}

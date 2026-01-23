@@ -86,24 +86,24 @@ function validateStateConfig(
 		return false;
 	}
 
-	if (typeof config.file !== "string" || config.file.length === 0) {
+	if (typeof config["file"] !== "string" || config["file"].length === 0) {
 		errors.push(`State "${stateName}" must have a "file" property (string)`);
 		return false;
 	}
 
-	if (config.duration !== undefined && typeof config.duration !== "number") {
+	if (config["duration"] !== undefined && typeof config["duration"] !== "number") {
 		errors.push(`State "${stateName}.duration" must be a number`);
 		return false;
 	}
 
-	if (config.transition_to !== undefined) {
-		if (typeof config.transition_to !== "string") {
+	if (config["transition_to"] !== undefined) {
+		if (typeof config["transition_to"] !== "string") {
 			errors.push(`State "${stateName}.transition_to" must be a string`);
 			return false;
 		}
-		if (!definedStates.has(config.transition_to)) {
+		if (!definedStates.has(config["transition_to"])) {
 			errors.push(
-				`State "${stateName}.transition_to" references undefined state "${config.transition_to}"`,
+				`State "${stateName}.transition_to" references undefined state "${config["transition_to"]}"`,
 			);
 			return false;
 		}
@@ -124,46 +124,46 @@ export function validateManifest(manifest: unknown): ManifestValidationResult {
 	}
 
 	// Required fields
-	if (typeof manifest.name !== "string" || manifest.name.length === 0) {
+	if (typeof manifest["name"] !== "string" || manifest["name"].length === 0) {
 		errors.push('Missing or invalid required field: "name" (string)');
-	} else if (!KEBAB_CASE_REGEX.test(manifest.name)) {
+	} else if (!KEBAB_CASE_REGEX.test(manifest["name"])) {
 		errors.push(`"name" must be kebab-case (e.g., "my-avatar")`);
 	}
 
-	if (typeof manifest.author !== "string" || manifest.author.length === 0) {
+	if (typeof manifest["author"] !== "string" || manifest["author"].length === 0) {
 		errors.push('Missing or invalid required field: "author" (string)');
 	}
 
-	if (typeof manifest.version !== "string" || manifest.version.length === 0) {
+	if (typeof manifest["version"] !== "string" || manifest["version"].length === 0) {
 		errors.push('Missing or invalid required field: "version" (string)');
-	} else if (!SEMVER_REGEX.test(manifest.version)) {
+	} else if (!SEMVER_REGEX.test(manifest["version"])) {
 		warnings.push(
-			`"version" should follow semver format (e.g., "1.0.0"), got "${manifest.version}"`,
+			`"version" should follow semver format (e.g., "1.0.0"), got "${manifest["version"]}"`,
 		);
 	}
 
-	if (typeof manifest.format !== "string" || manifest.format.length === 0) {
+	if (typeof manifest["format"] !== "string" || manifest["format"].length === 0) {
 		errors.push('Missing or invalid required field: "format" (string)');
 	}
 
 	// Optional fields type checking
-	if (manifest.resolution !== undefined && typeof manifest.resolution !== "string") {
+	if (manifest["resolution"] !== undefined && typeof manifest["resolution"] !== "string") {
 		errors.push('"resolution" must be a string');
 	}
 
-	if (manifest.framerate !== undefined && typeof manifest.framerate !== "number") {
+	if (manifest["framerate"] !== undefined && typeof manifest["framerate"] !== "number") {
 		errors.push('"framerate" must be a number');
 	}
 
-	if (manifest.loop !== undefined && typeof manifest.loop !== "boolean") {
+	if (manifest["loop"] !== undefined && typeof manifest["loop"] !== "boolean") {
 		errors.push('"loop" must be a boolean');
 	}
 
 	// States validation
-	if (!isObject(manifest.states)) {
+	if (!isObject(manifest["states"])) {
 		errors.push('Missing or invalid required field: "states" (object)');
 	} else {
-		const stateKeys = Object.keys(manifest.states);
+		const stateKeys = Object.keys(manifest["states"]);
 		if (stateKeys.length === 0) {
 			errors.push('"states" must contain at least one state');
 		} else {
@@ -171,7 +171,7 @@ export function validateManifest(manifest: unknown): ManifestValidationResult {
 
 			// Validate each state config
 			for (const stateName of stateKeys) {
-				validateStateConfig(stateName, manifest.states[stateName], definedStates, errors);
+				validateStateConfig(stateName, manifest["states"][stateName], definedStates, errors);
 			}
 
 			// Warn about missing required states
@@ -184,13 +184,13 @@ export function validateManifest(manifest: unknown): ManifestValidationResult {
 	}
 
 	// Palette validation
-	if (manifest.palette !== undefined) {
-		if (!isObject(manifest.palette)) {
+	if (manifest["palette"] !== undefined) {
+		if (!isObject(manifest["palette"])) {
 			errors.push('"palette" must be an object');
 		} else {
 			const paletteFields = ["primary", "secondary", "success", "error", "background"];
 			for (const field of paletteFields) {
-				const value = manifest.palette[field];
+				const value = manifest["palette"][field];
 				if (value !== undefined && typeof value !== "string") {
 					errors.push(`"palette.${field}" must be a string`);
 				}
@@ -199,49 +199,49 @@ export function validateManifest(manifest: unknown): ManifestValidationResult {
 	}
 
 	// Terminal configuration validation
-	if (manifest.terminal !== undefined) {
-		if (!isObject(manifest.terminal)) {
+	if (manifest["terminal"] !== undefined) {
+		if (!isObject(manifest["terminal"])) {
 			errors.push('"terminal" must be an object');
 		} else {
-			const terminal = manifest.terminal;
+			const terminal = manifest["terminal"];
 
-			if (typeof terminal.enabled !== "boolean") {
+			if (typeof terminal["enabled"] !== "boolean") {
 				errors.push('"terminal.enabled" must be a boolean');
 			}
 
-			if (terminal.mode !== "ascii" && terminal.mode !== "image") {
+			if (terminal["mode"] !== "ascii" && terminal["mode"] !== "image") {
 				errors.push('"terminal.mode" must be "ascii" or "image"');
 			}
 
-			if (terminal.framerate !== undefined && typeof terminal.framerate !== "number") {
+			if (terminal["framerate"] !== undefined && typeof terminal["framerate"] !== "number") {
 				errors.push('"terminal.framerate" must be a number');
 			}
 
-			if (terminal.size !== undefined) {
-				if (!isObject(terminal.size)) {
+			if (terminal["size"] !== undefined) {
+				if (!isObject(terminal["size"])) {
 					errors.push('"terminal.size" must be an object');
 				} else {
-					if (typeof terminal.size.width !== "number") {
+					if (typeof terminal["size"]["width"] !== "number") {
 						errors.push('"terminal.size.width" must be a number');
 					}
-					if (typeof terminal.size.height !== "number") {
+					if (typeof terminal["size"]["height"] !== "number") {
 						errors.push('"terminal.size.height" must be a number');
 					}
 				}
 			}
 
-			if (!isObject(terminal.states)) {
+			if (!isObject(terminal["states"])) {
 				errors.push('"terminal.states" must be an object');
 			} else {
-				for (const [stateName, stateConfig] of Object.entries(terminal.states)) {
+				for (const [stateName, stateConfig] of Object.entries(terminal["states"])) {
 					if (!isObject(stateConfig)) {
 						errors.push(`"terminal.states.${stateName}" must be an object`);
 						continue;
 					}
 
 					const config = stateConfig as Record<string, unknown>;
-					const hasFrames = config.frames !== undefined;
-					const hasImage = config.image !== undefined;
+					const hasFrames = config["frames"] !== undefined;
+					const hasImage = config["image"] !== undefined;
 
 					if (!hasFrames && !hasImage) {
 						errors.push(
@@ -249,10 +249,10 @@ export function validateManifest(manifest: unknown): ManifestValidationResult {
 						);
 					}
 
-					if (hasFrames && !Array.isArray(config.frames)) {
+					if (hasFrames && !Array.isArray(config["frames"])) {
 						errors.push(`"terminal.states.${stateName}.frames" must be an array`);
 					} else if (hasFrames) {
-						const frames = config.frames as unknown[];
+						const frames = config["frames"] as unknown[];
 						for (let i = 0; i < frames.length; i++) {
 							if (typeof frames[i] !== "string") {
 								errors.push(`"terminal.states.${stateName}.frames[${i}]" must be a string`);
@@ -260,7 +260,7 @@ export function validateManifest(manifest: unknown): ManifestValidationResult {
 						}
 					}
 
-					if (hasImage && typeof config.image !== "string") {
+					if (hasImage && typeof config["image"] !== "string") {
 						errors.push(`"terminal.states.${stateName}.image" must be a string`);
 					}
 				}
@@ -276,7 +276,7 @@ export function validateManifest(manifest: unknown): ManifestValidationResult {
 		valid: true,
 		errors,
 		warnings,
-		manifest: manifest as AvatarManifest,
+		manifest: manifest as unknown as AvatarManifest,
 	};
 }
 
@@ -310,8 +310,8 @@ export function getStateConfig(manifest: AvatarManifest, state: string): AvatarS
 	}
 
 	// Fall back to idle
-	if (manifest.states.idle) {
-		return manifest.states.idle;
+	if (manifest.states["idle"]) {
+		return manifest.states["idle"];
 	}
 
 	// No fallback available

@@ -9,23 +9,23 @@ export function detectCapabilities(): TerminalCapabilities {
 	let supportsImages = false;
 
 	// Check for iTerm2
-	if (env.TERM_PROGRAM === "iTerm.app") {
+	if (env["TERM_PROGRAM"] === "iTerm.app") {
 		protocol = "iterm";
 		supportsImages = true;
 	}
 	// Check for Kitty
-	else if (env.TERM === "xterm-kitty") {
+	else if (env["TERM"] === "xterm-kitty") {
 		protocol = "kitty";
 		supportsImages = true;
 	}
 	// Check for WezTerm (uses Kitty protocol)
-	else if (env.TERM_PROGRAM === "WezTerm") {
+	else if (env["TERM_PROGRAM"] === "WezTerm") {
 		protocol = "kitty";
 		supportsImages = true;
 	}
 
 	// Check for true color support
-	const colorTerm = env.COLORTERM;
+	const colorTerm = env["COLORTERM"];
 	const supportsTrueColor = colorTerm === "truecolor" || colorTerm === "24bit";
 
 	return {

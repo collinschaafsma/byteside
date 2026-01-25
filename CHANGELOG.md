@@ -1,5 +1,11 @@
 # byteside
 
+## 0.3.2
+
+### Patch Changes
+
+- Add async: true to Claude Code hooks for non-blocking execution
+
 ## 0.3.1
 
 ### Patch Changes

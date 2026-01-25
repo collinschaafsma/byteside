@@ -9,6 +9,7 @@ import { dirname, join } from "node:path";
 export interface HookCommand {
 	type: "command";
 	command: string;
+	async?: boolean;
 }
 
 /**
@@ -99,33 +100,33 @@ export function generateHookConfig(): ClaudeHooks {
 	return {
 		UserPromptSubmit: [
 			{
-				hooks: [{ type: "command", command: "byteside trigger thinking" }],
+				hooks: [{ type: "command", command: "byteside trigger thinking", async: true }],
 			},
 		],
 		PreToolUse: [
 			{
 				matcher: WRITING_TOOLS,
-				hooks: [{ type: "command", command: "byteside trigger writing" }],
+				hooks: [{ type: "command", command: "byteside trigger writing", async: true }],
 			},
 			{
 				matcher: BASH_TOOLS,
-				hooks: [{ type: "command", command: "byteside trigger bash" }],
+				hooks: [{ type: "command", command: "byteside trigger bash", async: true }],
 			},
 		],
 		PostToolUse: [
 			{
 				matcher: "*",
-				hooks: [{ type: "command", command: "byteside trigger thinking" }],
+				hooks: [{ type: "command", command: "byteside trigger thinking", async: true }],
 			},
 		],
 		Notification: [
 			{
-				hooks: [{ type: "command", command: "byteside trigger waiting" }],
+				hooks: [{ type: "command", command: "byteside trigger waiting", async: true }],
 			},
 		],
 		Stop: [
 			{
-				hooks: [{ type: "command", command: "byteside trigger success" }],
+				hooks: [{ type: "command", command: "byteside trigger success", async: true }],
 			},
 		],
 	};
